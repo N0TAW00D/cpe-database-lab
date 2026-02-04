@@ -183,6 +183,22 @@ a {
   background-color: var(--bg-body);
 }
 
+.btn:focus,
+.btn:active,
+.btn:focus-visible,
+button:focus,
+button:active,
+button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+}
+
 /* Table Styles */
 .table-container {
   overflow-x: auto;

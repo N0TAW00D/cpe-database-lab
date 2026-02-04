@@ -2,8 +2,13 @@
 // Example usage: listCustomers().then(setCustomers)
 import { http } from "./http.js";
 
-export function listCustomers() {
-  return http("/api/customers");
+export function listCustomers(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return http(`/api/customers${query ? `?${query}` : ''}`);
+}
+
+export function getCustomer(id) {
+  return http(`/api/customers/${id}`);
 }
 
 export function listCountries() {

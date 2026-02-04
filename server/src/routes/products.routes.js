@@ -5,15 +5,43 @@ import { pool } from "../db/pool.js";
 
 const r = Router();
 
-// List products (with units)
-r.get("/", async (_, res) => {
+// List products with pagination, search, sort
+r.get("/", async (req, res) => {
+  const { search = '', page = 1, limit = 10, sortBy = 'code', sortDir = 'asc' } = req.query;
+  const offset = (Number(page) - 1) * Number(limit);
+  
+  const allowedSort = ['code', 'name', 'units_code', 'unit_price'];
+  const sortColumn = allowedSort.includes(sortBy) ? (sortBy === 'units_code' ? 'u.code' : `p.${sortBy}`) : 'p.code';
+  const sortDirection = sortDir === 'asc' ? 'ASC' : 'DESC';
+  
+  const searchParam = `%${search}%`;
+  
+  // Count total
+  const countResult = await pool.query(`
+    SELECT COUNT(*) as total
+    FROM product p
+    JOIN units u ON u.id = p.units_id
+    WHERE p.code ILIKE $1 OR p.name ILIKE $1 OR u.code ILIKE $1
+  `, [searchParam]);
+  const total = Number(countResult.rows[0].total);
+
+  // Get paginated data
   const { rows } = await pool.query(`
-    select p.id, p.code, p.name, p.unit_price, u.code as units_code, p.units_id
-    from product p
-    join units u on u.id = p.units_id
-    order by p.code
-  `);
-  res.json(rows);
+    SELECT p.id, p.code, p.name, p.unit_price, u.code as units_code, p.units_id
+    FROM product p
+    JOIN units u ON u.id = p.units_id
+    WHERE p.code ILIKE $1 OR p.name ILIKE $1 OR u.code ILIKE $1
+    ORDER BY ${sortColumn} ${sortDirection} NULLS LAST
+    LIMIT $2 OFFSET $3
+  `, [searchParam, Number(limit), offset]);
+
+  res.json({
+    data: rows,
+    total,
+    page: Number(page),
+    limit: Number(limit),
+    totalPages: Math.ceil(total / Number(limit))
+  });
 });
 
 r.post("/", async (req, res) => {
@@ -91,6 +119,19 @@ r.delete("/:id", async (req, res) => {
 r.get("/units", async (_, res) => {
   const { rows } = await pool.query("SELECT id, code, name FROM units ORDER BY name");
   res.json(rows);
+});
+
+// Get single product (must be after /units)
+r.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { rows } = await pool.query(`
+    SELECT p.id, p.code, p.name, p.unit_price, u.code as units_code, p.units_id
+    FROM product p
+    JOIN units u ON u.id = p.units_id
+    WHERE p.id = $1
+  `, [id]);
+  if (rows.length === 0) return res.status(404).json({ error: "Product not found" });
+  res.json(rows[0]);
 });
 
 export default r;

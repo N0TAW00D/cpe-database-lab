@@ -2,8 +2,9 @@
 // Example usage: createInvoice(payload).then(({ id }) => ...)
 import { http } from "./http.js";
 
-export function listInvoices() {
-  return http("/api/invoices");
+export function listInvoices(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return http(`/api/invoices${query ? `?${query}` : ''}`);
 }
 
 export function getInvoice(id) {

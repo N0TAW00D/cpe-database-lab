@@ -2,8 +2,13 @@
 // Example usage: listProducts().then(setProducts)
 import { http } from "./http.js";
 
-export function listProducts() {
-  return http("/api/products");
+export function listProducts(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return http(`/api/products${query ? `?${query}` : ''}`);
+}
+
+export function getProduct(id) {
+  return http(`/api/products/${id}`);
 }
 
 export function listUnits() {

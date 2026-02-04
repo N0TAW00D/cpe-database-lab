@@ -16,16 +16,46 @@ const CreateInvoiceSchema = z.object({
   })).min(1)
 });
 
-// GET list of invoices
+// GET list of invoices with pagination, search, sort
 export async function listInvoices(req, res) {
+  const { search = '', page = 1, limit = 10, sortBy = 'invoice_date', sortDir = 'desc' } = req.query;
+  const offset = (Number(page) - 1) * Number(limit);
+  
+  // Allowed sort columns
+  const allowedSort = ['invoice_no', 'customer_name', 'invoice_date', 'amount_due'];
+  const sortColumn = allowedSort.includes(sortBy) ? sortBy : 'invoice_date';
+  const sortDirection = sortDir === 'asc' ? 'ASC' : 'DESC';
+
+  // Build WHERE clause for search
+  const searchParam = `%${search}%`;
+  
+  // Count total
+  const countResult = await pool.query(`
+    SELECT COUNT(*) as total
+    FROM invoice i
+    JOIN customer c ON c.id = i.customer_id
+    WHERE i.invoice_no ILIKE $1 OR c.name ILIKE $1
+  `, [searchParam]);
+  const total = Number(countResult.rows[0].total);
+
+  // Get paginated data
   const { rows } = await pool.query(`
-    select i.id, i.invoice_no, i.invoice_date, i.amount_due,
+    SELECT i.id, i.invoice_no, i.invoice_date, i.amount_due,
            c.name as customer_name
-    from invoice i
-    join customer c on c.id = i.customer_id
-    order by i.invoice_date desc nulls last, i.id desc
-  `);
-  res.json(rows);
+    FROM invoice i
+    JOIN customer c ON c.id = i.customer_id
+    WHERE i.invoice_no ILIKE $1 OR c.name ILIKE $1
+    ORDER BY ${sortColumn} ${sortDirection} NULLS LAST, i.id DESC
+    LIMIT $2 OFFSET $3
+  `, [searchParam, Number(limit), offset]);
+
+  res.json({
+    data: rows,
+    total,
+    page: Number(page),
+    limit: Number(limit),
+    totalPages: Math.ceil(total / Number(limit))
+  });
 }
 
 // GET single invoice with header + line items

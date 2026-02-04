@@ -5,10 +5,39 @@ import { pool } from "../db/pool.js";
 
 const r = Router();
 
-// List customers
-r.get("/", async (_, res) => {
-  const { rows } = await pool.query("select * from customer order by name");
-  res.json(rows);
+// List customers with pagination, search, sort
+r.get("/", async (req, res) => {
+  const { search = '', page = 1, limit = 10, sortBy = 'name', sortDir = 'asc' } = req.query;
+  const offset = (Number(page) - 1) * Number(limit);
+  
+  const allowedSort = ['code', 'name', 'address_line1', 'credit_limit'];
+  const sortColumn = allowedSort.includes(sortBy) ? sortBy : 'name';
+  const sortDirection = sortDir === 'asc' ? 'ASC' : 'DESC';
+  
+  const searchParam = `%${search}%`;
+  
+  // Count total
+  const countResult = await pool.query(`
+    SELECT COUNT(*) as total FROM customer
+    WHERE code ILIKE $1 OR name ILIKE $1 OR address_line1 ILIKE $1
+  `, [searchParam]);
+  const total = Number(countResult.rows[0].total);
+
+  // Get paginated data
+  const { rows } = await pool.query(`
+    SELECT * FROM customer
+    WHERE code ILIKE $1 OR name ILIKE $1 OR address_line1 ILIKE $1
+    ORDER BY ${sortColumn} ${sortDirection} NULLS LAST
+    LIMIT $2 OFFSET $3
+  `, [searchParam, Number(limit), offset]);
+
+  res.json({
+    data: rows,
+    total,
+    page: Number(page),
+    limit: Number(limit),
+    totalPages: Math.ceil(total / Number(limit))
+  });
 });
 
 // Create customer (supports auto code)
@@ -90,6 +119,14 @@ r.delete("/:id", async (req, res) => {
 r.get("/countries", async (_, res) => {
   const { rows } = await pool.query("SELECT id, code, name FROM country ORDER BY name");
   res.json(rows);
+});
+
+// Get single customer (must be after /countries)
+r.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { rows } = await pool.query("SELECT * FROM customer WHERE id = $1", [id]);
+  if (rows.length === 0) return res.status(404).json({ error: "Customer not found" });
+  res.json(rows[0]);
 });
 
 export default r;

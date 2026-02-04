@@ -3,13 +3,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from "react-router-dom";
-import InvoiceList from "./pages/InvoiceList.jsx";
-import InvoiceCreate from "./pages/InvoiceCreate.jsx";
-import InvoiceEdit from "./pages/InvoiceEdit.jsx";
-import InvoiceView from "./pages/InvoiceView.jsx";
-import Reports from "./pages/Reports.jsx";
-import CustomerList from "./pages/CustomerList.jsx";
-import ProductList from "./pages/ProductList.jsx";
+import InvoiceList from "./pages/invoices/InvoiceList.jsx";
+import InvoicePage from "./pages/invoices/InvoicePage.jsx";
+import CustomerList from "./pages/customers/CustomerList.jsx";
+import CustomerPage from "./pages/customers/CustomerPage.jsx";
+import ProductList from "./pages/products/ProductList.jsx";
+import ProductPage from "./pages/products/ProductPage.jsx";
+import Reports from "./pages/reports/Reports.jsx";
 import "./index.css";
 
 // Left navigation sidebar (เมนูหลักของระบบ)
@@ -80,11 +80,17 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         {/* Default route → invoices list */}
         <Route path="/" element={<Navigate to="/invoices" replace />} />
         <Route path="/invoices" element={<Layout><InvoiceList /></Layout>} />
-        <Route path="/invoices/new" element={<Layout><InvoiceCreate /></Layout>} />
-        <Route path="/invoices/:id" element={<Layout><InvoiceView /></Layout>} />
-        <Route path="/invoices/:id/edit" element={<Layout><InvoiceEdit /></Layout>} />
+        <Route path="/invoices/new" element={<Layout><InvoicePage mode="create" /></Layout>} />
+        <Route path="/invoices/:id" element={<Layout><InvoicePage mode="view" /></Layout>} />
+        <Route path="/invoices/:id/edit" element={<Layout><InvoicePage mode="edit" /></Layout>} />
         <Route path="/customers" element={<Layout><CustomerList /></Layout>} />
+        <Route path="/customers/new" element={<Layout><CustomerPage mode="create" /></Layout>} />
+        <Route path="/customers/:id" element={<Layout><CustomerPage mode="view" /></Layout>} />
+        <Route path="/customers/:id/edit" element={<Layout><CustomerPage mode="edit" /></Layout>} />
         <Route path="/products" element={<Layout><ProductList /></Layout>} />
+        <Route path="/products/new" element={<Layout><ProductPage mode="create" /></Layout>} />
+        <Route path="/products/:id" element={<Layout><ProductPage mode="view" /></Layout>} />
+        <Route path="/products/:id/edit" element={<Layout><ProductPage mode="edit" /></Layout>} />
         <Route path="/reports" element={<Layout><Reports /></Layout>} />
       </Routes>
     </BrowserRouter>

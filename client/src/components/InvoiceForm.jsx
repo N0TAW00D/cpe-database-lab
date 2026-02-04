@@ -1,52 +1,36 @@
 // Invoice form component (ฟอร์มสร้าง/แก้ไขใบแจ้งหนี้)
-// Example usage: <InvoiceForm customers={...} products={...} onSubmit={...} />
+// Example usage: <InvoiceForm searchCustomers={...} searchProducts={...} onSubmit={...} />
 import React from "react";
 import LineItemsEditor from "./LineItemsEditor.jsx";
+import SearchableSelect from "./SearchableSelect.jsx";
 import { formatBaht } from "../utils.js";
 
-export default function InvoiceForm({ customers, products, onSubmit, submitting, initialData }) {
+export default function InvoiceForm({ searchCustomers, searchProducts, onSubmit, submitting, initialData }) {
   // Local state for header fields and line items
   const [invoiceNo, setInvoiceNo] = React.useState("");
-  const [customerId, setCustomerId] = React.useState(customers[0]?.id ?? "");
+  const [customerId, setCustomerId] = React.useState("");
+  const [customerLabel, setCustomerLabel] = React.useState(""); // For displaying selected customer
   const [invoiceDate, setInvoiceDate] = React.useState(new Date().toISOString().slice(0, 10));
   const [vatRate, setVatRate] = React.useState(0.07);
-  const [items, setItems] = React.useState([]);
+  const [items, setItems] = React.useState([{ product_id: "", quantity: 1, unit_price: 0 }]);
 
   React.useEffect(() => {
     if (initialData) {
       setInvoiceNo(initialData.invoice_no);
       setCustomerId(initialData.customer_id);
+      setCustomerLabel(initialData.customer_label || "");
       const d = initialData.invoice_date ? new Date(initialData.invoice_date).toISOString().slice(0, 10) : "";
       setInvoiceDate(d);
       setVatRate(Number(initialData.vat_rate || 0.07));
       const mappedItems = (initialData.line_items || []).map(li => ({
         product_id: li.product_id,
+        product_label: li.product_label || `${li.product_code} - ${li.product_name}`,
         quantity: li.quantity,
-        unit_price: Number(li.unit_price) // Ensure price is loaded
+        unit_price: Number(li.unit_price)
       }));
-      setItems(mappedItems);
-    } else {
-      const first = products[0];
-      if (products.length > 0) {
-        // Default first line item when creating
-        setItems([{ product_id: first.id, quantity: 1, unit_price: Number(first.unit_price || 0) }]);
-      }
+      setItems(mappedItems.length > 0 ? mappedItems : [{ product_id: "", quantity: 1, unit_price: 0 }]);
     }
-  }, [initialData, products]); // Run when initialData or products load
-
-  React.useEffect(() => {
-    if (!customerId && customers[0]) setCustomerId(customers[0].id);
-  }, [customers, customerId]);
-
-  React.useEffect(() => {
-    // Only set default item if:
-    // 1. Not loading initial data (handled above)
-    // 2. No items exist
-    // 3. Products are loaded
-    if (!initialData && items.length === 0 && products[0]) {
-      setItems([{ product_id: products[0].id, quantity: 1, unit_price: Number(products[0].unit_price || 0) }]);
-    }
-  }, [products, items.length, initialData]);
+  }, [initialData]);
 
   const subtotal = items.reduce((s, it) => s + Number(it.quantity || 0) * Number(it.unit_price || 0), 0);
   const vat = subtotal * Number(vatRate || 0);
@@ -54,19 +38,26 @@ export default function InvoiceForm({ customers, products, onSubmit, submitting,
 
   const [autoCode, setAutoCode] = React.useState(false);
 
-  React.useEffect(() => {
-    if (initialData) {
-      setInvoiceNo(initialData.invoice_no);
-      setCustomerId(initialData.customer_id);
-      // ...
-    }
-  }, [initialData, products]);
-
-  // NOTE: I am placing the autoCode logic inside the render.
+  // Check if all items have products selected
+  const hasEmptyProduct = items.some(it => !it.product_id);
+  const hasEmptyCustomer = !customerId;
 
   // Build payload and pass to parent
   function handleSubmit(e) {
     e.preventDefault();
+    
+    // Validate: customer must be selected
+    if (hasEmptyCustomer) {
+      alert('Please select a customer');
+      return;
+    }
+    
+    // Validate: all items must have a product selected
+    if (hasEmptyProduct) {
+      alert('Please select a product for all items');
+      return;
+    }
+    
     const payload = {
       invoice_no: autoCode ? "" : invoiceNo.trim(), // Send empty if auto
       customer_id: Number(customerId),
@@ -112,15 +103,17 @@ export default function InvoiceForm({ customers, products, onSubmit, submitting,
 
             <div className="form-group">
               <label className="form-label">Customer</label>
-              <select
-                className="form-control"
+              <SearchableSelect
+                onSearch={searchCustomers}
                 value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
-              >
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
-                ))}
-              </select>
+                onChange={(val, label) => {
+                  setCustomerId(val);
+                  if (label) setCustomerLabel(label);
+                }}
+                selectedLabel={customerLabel}
+                placeholder="Search customer..."
+                error={!customerId}
+              />
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -178,15 +171,21 @@ export default function InvoiceForm({ customers, products, onSubmit, submitting,
               type="submit"
               className="btn btn-primary"
               style={{ width: "100%", padding: "12px" }}
-              disabled={submitting || products.length === 0 || customers.length === 0}
+              disabled={submitting || hasEmptyProduct || hasEmptyCustomer}
             >
-              {submitting ? "Creating Invoice..." : "Create Invoice"}
+              {submitting ? (initialData ? "Saving..." : "Creating Invoice...") : (initialData ? "Save Changes" : "Create Invoice")}
             </button>
+            {(hasEmptyCustomer || hasEmptyProduct) && (
+              <div style={{ marginTop: 8, fontSize: '0.8rem', color: '#ef4444', textAlign: 'center' }}>
+                {hasEmptyCustomer && <div>Please select a customer</div>}
+                {hasEmptyProduct && <div>Please select a product for all items</div>}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <LineItemsEditor products={products} value={items} onChange={setItems} />
+      <LineItemsEditor searchProducts={searchProducts} value={items} onChange={setItems} />
     </form>
   );
 }
