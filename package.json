@@ -9,6 +9,11 @@
     "docker:up": "docker-compose up -d --build",
     "docker:down": "docker-compose down",
     "docker:ps": "docker-compose ps",
-    "docker:restart": "docker-compose restart"
+    "docker:restart": "docker-compose restart",
+    "docker:db:start": "./docker-db-start.sh",
+    "docker:db:stop": "./docker-db-stop.sh",
+    "docker:db:check": "./docker-db-check.sh",
+    "docker:db:logs": "docker-compose -f docker-compose.db.yml logs -f",
+    "docker:db:ps": "docker-compose -f docker-compose.db.yml ps"
   }
 }
