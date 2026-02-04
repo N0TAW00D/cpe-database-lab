@@ -1,0 +1,86 @@
+services:
+  # PostgreSQL Database
+  database:
+    image: postgres:17-alpine3.22
+    platform: linux/amd64
+    container_name: invoicedoc-db
+    restart: always
+    shm_size: 128mb
+    ports:
+      - "15432:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: invoices_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - invoicedoc-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API Server
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    container_name: invoicedoc-server
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://root:root@database:5432/invoices_db
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - invoicedoc-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontend Client
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: http://localhost:4000
+    platform: linux/amd64
+    container_name: invoicedoc-client
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - server
+    networks:
+      - invoicedoc-network
+
+  # Adminer (Database Admin UI - optional)
+  adminer:
+    image: adminer
+    platform: linux/amd64
+    container_name: invoicedoc-adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - database
+    networks:
+      - invoicedoc-network
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  invoicedoc-network:
+    driver: bridge

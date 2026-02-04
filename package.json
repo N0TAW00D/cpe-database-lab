@@ -1,0 +1,14 @@
+{
+  "name": "invoicedoc2",
+  "version": "2.0.0",
+  "description": "InvoiceDoc2 - Invoice Management System",
+  "scripts": {
+    "docker:start": "./docker-start.sh",
+    "docker:stop": "./docker-stop.sh",
+    "docker:logs": "./docker-logs.sh",
+    "docker:up": "docker-compose up -d --build",
+    "docker:down": "docker-compose down",
+    "docker:ps": "docker-compose ps",
+    "docker:restart": "docker-compose restart"
+  }
+}

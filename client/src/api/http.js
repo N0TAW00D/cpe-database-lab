@@ -1,9 +1,11 @@
 // HTTP helper for API calls (ตัวช่วยเรียก API)
 // Example usage: http("/api/products")
-export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000";
+export const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 export async function http(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  // Use relative path if API_BASE is empty or path starts with /
+  const baseUrl = API_BASE || (path.startsWith("/") ? "" : "http://localhost:4000");
+  const res = await fetch(`${baseUrl}${path}`, {
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     ...options,
   });
