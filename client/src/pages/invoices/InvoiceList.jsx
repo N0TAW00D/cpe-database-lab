@@ -9,18 +9,35 @@ export default function InvoiceList() {
     const fetchData = React.useCallback((params) => listInvoices(params), []);
     const [confirmModal, setConfirmModal] = React.useState({ isOpen: false, id: null });
     const [alertModal, setAlertModal] = React.useState({ isOpen: false, message: "" });
+    const pendingDeleteRef = React.useRef(null);
 
-    const handleDelete = async (id) => {
-        setConfirmModal({ isOpen: true, id });
+    const closeConfirm = React.useCallback(() => {
+        setConfirmModal({ isOpen: false, id: null });
+        if (pendingDeleteRef.current) {
+            pendingDeleteRef.current(false);
+            pendingDeleteRef.current = null;
+        }
+    }, []);
+
+    const handleDelete = (id) => {
+        // Return a promise so DataList can wait until user confirms/cancels.
+        return new Promise((resolve) => {
+            pendingDeleteRef.current = resolve;
+            setConfirmModal({ isOpen: true, id });
+        });
     };
 
     const confirmDelete = async () => {
         try {
             await deleteInvoice(confirmModal.id);
             setConfirmModal({ isOpen: false, id: null });
+            if (pendingDeleteRef.current) {
+                pendingDeleteRef.current(true);
+                pendingDeleteRef.current = null;
+            }
         } catch (e) {
             setAlertModal({ isOpen: true, message: "Error: " + String(e.message || e) });
-            setConfirmModal({ isOpen: false, id: null });
+            closeConfirm();
         }
     };
 
@@ -35,8 +52,9 @@ export default function InvoiceList() {
         <>
             <ConfirmModal
                 isOpen={confirmModal.isOpen}
-                onClose={() => setConfirmModal({ isOpen: false, id: null })}
+                onClose={closeConfirm}
                 onConfirm={confirmDelete}
+                closeOnConfirm={false}
                 title="Delete Invoice"
                 message="Are you sure you want to delete this invoice?"
                 confirmText="Delete"

@@ -9,22 +9,39 @@ export default function CustomerList() {
     const fetchData = React.useCallback((params) => listCustomers(params), []);
     const [confirmModal, setConfirmModal] = React.useState({ isOpen: false, id: null, force: false });
     const [alertModal, setAlertModal] = React.useState({ isOpen: false, message: "" });
+    const pendingDeleteRef = React.useRef(null);
 
-    const handleDelete = async (id) => {
-        setConfirmModal({ isOpen: true, id, force: false });
+    const closeConfirm = React.useCallback(() => {
+        setConfirmModal({ isOpen: false, id: null, force: false });
+        if (pendingDeleteRef.current) {
+            pendingDeleteRef.current(false);
+            pendingDeleteRef.current = null;
+        }
+    }, []);
+
+    const handleDelete = (id) => {
+        // Return a promise so DataList can wait until user confirms/cancels.
+        return new Promise((resolve) => {
+            pendingDeleteRef.current = resolve;
+            setConfirmModal({ isOpen: true, id, force: false });
+        });
     };
 
     const confirmDelete = async () => {
         try {
             await deleteCustomer(confirmModal.id, confirmModal.force);
             setConfirmModal({ isOpen: false, id: null, force: false });
+            if (pendingDeleteRef.current) {
+                pendingDeleteRef.current(true);
+                pendingDeleteRef.current = null;
+            }
         } catch (e) {
             const msg = String(e.message || e);
             if (msg.includes("Cannot delete customer because they have existing invoices")) {
                 setConfirmModal({ isOpen: true, id: confirmModal.id, force: true });
             } else {
                 setAlertModal({ isOpen: true, message: "Error: " + msg });
-                setConfirmModal({ isOpen: false, id: null, force: false });
+                closeConfirm();
             }
         }
     };
@@ -45,8 +62,9 @@ export default function CustomerList() {
         <>
             <ConfirmModal
                 isOpen={confirmModal.isOpen}
-                onClose={() => setConfirmModal({ isOpen: false, id: null, force: false })}
+                onClose={closeConfirm}
                 onConfirm={confirmDelete}
+                closeOnConfirm={false}
                 title="Delete Customer"
                 message={confirmModal.force 
                     ? "This customer has invoices. Do you want to delete the customer AND all their invoices?"

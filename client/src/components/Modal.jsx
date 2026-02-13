@@ -54,7 +54,17 @@ export default function Modal({ isOpen, onClose, title, children, footer }) {
 }
 
 // Confirmation Modal Helper
-export function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmText = "Confirm", cancelText = "Cancel", variant = "danger" }) {
+export function ConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  variant = "danger",
+  closeOnConfirm = true
+}) {
   return (
     <Modal
       isOpen={isOpen}
@@ -69,7 +79,7 @@ export function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confi
             className={`btn ${variant === "danger" ? "btn-danger" : "btn-primary"}`}
             onClick={() => {
               onConfirm();
-              onClose();
+              if (closeOnConfirm) onClose();
             }}
           >
             {confirmText}
