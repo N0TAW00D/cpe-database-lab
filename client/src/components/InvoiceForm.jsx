@@ -38,7 +38,7 @@ export default function InvoiceForm({ searchCustomers, searchProducts, onSubmit,
   const vat = subtotal * Number(vatRate || 0);
   const amountDue = subtotal + vat;
 
-  const [autoCode, setAutoCode] = React.useState(false);
+  const [autoCode, setAutoCode] = React.useState(true);
 
   // Check if all items have products selected
   const hasEmptyProduct = items.some(it => !it.product_id);
@@ -102,9 +102,9 @@ export default function InvoiceForm({ searchCustomers, searchProducts, onSubmit,
                   placeholder="e.g. INV-2026-0001"
                 />
                 {!initialData && (
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div className="form-inline-option">
                     <input type="checkbox" checked={autoCode} onChange={e => setAutoCode(e.target.checked)} id="inv_auto" />
-                    <label htmlFor="inv_auto" style={{ marginLeft: 4, fontSize: '0.8rem' }}>Auto</label>
+                    <label htmlFor="inv_auto">Auto</label>
                   </div>
                 )}
               </div>

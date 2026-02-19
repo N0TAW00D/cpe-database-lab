@@ -18,7 +18,7 @@ export default function CustomerPage({ mode: propMode }) {
     const [err, setErr] = React.useState("");
     const [submitting, setSubmitting] = React.useState(false);
     const [loading, setLoading] = React.useState(mode !== "create");
-    const [autoCode, setAutoCode] = React.useState(false);
+    const [autoCode, setAutoCode] = React.useState(true);
     const [form, setForm] = React.useState({
         code: "", name: "", address_line1: "", address_line2: "", country_id: "", credit_limit: ""
     });
@@ -174,9 +174,9 @@ export default function CustomerPage({ mode: propMode }) {
                                         onChange={e => setForm({ ...form, code: e.target.value })}
                                         placeholder="C001"
                                     />
-                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <div className="form-inline-option">
                                         <input type="checkbox" checked={autoCode} onChange={e => setAutoCode(e.target.checked)} id="c_auto" />
-                                        <label htmlFor="c_auto" style={{ marginLeft: 4, fontSize: '0.8rem' }}>Auto</label>
+                                        <label htmlFor="c_auto">Auto</label>
                                     </div>
                                 </div>
                             ) : (

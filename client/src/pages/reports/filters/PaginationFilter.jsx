@@ -35,8 +35,8 @@ export default function PaginationFilter({ page, limit, total, totalPages, onCha
         <select
           value={limit}
           onChange={(e) => onChange({ limit: Number(e.target.value), page: 1 })}
-          className="form-control"
-          style={{ width: 'auto', padding: '4px 8px', fontSize: '0.85rem', marginLeft: 8 }}
+          className="form-control form-control-compact"
+          style={{ marginLeft: 8 }}
         >
           {PAGE_SIZE_OPTIONS.map(size => (
             <option key={size} value={size}>{size} / page</option>

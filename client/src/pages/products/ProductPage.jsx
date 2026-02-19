@@ -18,7 +18,7 @@ export default function ProductPage({ mode: propMode }) {
     const [err, setErr] = React.useState("");
     const [submitting, setSubmitting] = React.useState(false);
     const [loading, setLoading] = React.useState(mode !== "create");
-    const [autoCode, setAutoCode] = React.useState(false);
+    const [autoCode, setAutoCode] = React.useState(true);
     const [form, setForm] = React.useState({
         code: "", name: "", units_id: "", unit_price: ""
     });
@@ -162,9 +162,9 @@ export default function ProductPage({ mode: propMode }) {
                                         onChange={e => setForm({ ...form, code: e.target.value })}
                                         placeholder="P001"
                                     />
-                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <div className="form-inline-option">
                                         <input type="checkbox" checked={autoCode} onChange={e => setAutoCode(e.target.checked)} id="p_auto" />
-                                        <label htmlFor="p_auto" style={{ marginLeft: 4, fontSize: '0.8rem' }}>Auto</label>
+                                        <label htmlFor="p_auto">Auto</label>
                                     </div>
                                 </div>
                             ) : (

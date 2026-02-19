@@ -209,8 +209,7 @@ export default function DataList({
                         <select 
                             value={pageSize} 
                             onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            className="form-control"
-                            style={{ width: 'auto', padding: '4px 8px', fontSize: '0.85rem' }}
+                            className="form-control form-control-compact"
                         >
                             {PAGE_SIZE_OPTIONS.map(size => (
                                 <option key={size} value={size}>{size} / page</option>

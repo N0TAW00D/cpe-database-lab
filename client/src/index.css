@@ -339,6 +339,39 @@ button {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+/* Inline option: checkbox + label next to form control (e.g. "Auto" code) */
+.form-inline-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.form-inline-option input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.form-inline-option label {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Compact select for pagination / page size (fixed width, not full width) */
+.form-control-compact {
+  width: auto;
+  min-width: 5rem;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
 /* Alerts */
 .alert {
   padding: 16px;
