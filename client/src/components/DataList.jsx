@@ -42,6 +42,11 @@ export default function DataList({
     const [currentPage, setCurrentPage] = React.useState(1);
     const [pageSize, setPageSize] = React.useState(defaultPageSize);
 
+    const dataRef = React.useRef(data);
+    React.useEffect(() => {
+        dataRef.current = data;
+    }, [data]);
+
     // Debounce search input
     React.useEffect(() => {
         const timer = setTimeout(() => {
@@ -66,9 +71,18 @@ export default function DataList({
                 params.sortDir = sortDir;
             }
             const result = await fetchData(params);
+            const nextTotalPages = Number(result.totalPages || 0);
+            if (nextTotalPages > 0 && currentPage > nextTotalPages) {
+                setCurrentPage(nextTotalPages);
+                return;
+            }
+            if (nextTotalPages === 0 && currentPage !== 1) {
+                setCurrentPage(1);
+            }
+
             setData(result.data || []);
             setTotal(result.total || 0);
-            setTotalPages(result.totalPages || 0);
+            setTotalPages(nextTotalPages);
         } catch (e) {
             setError(String(e.message || e));
         } finally {
@@ -94,7 +108,19 @@ export default function DataList({
 
     // Handle delete with reload
     const handleDelete = async (id) => {
-        await onDelete(id);
+        const confirmed = await onDelete?.(id);
+        if (!confirmed) return;
+
+        const prevLen = Number(dataRef.current?.length || 0);
+        setData((prev) => (Array.isArray(prev) ? prev.filter((x) => x?.id !== id) : prev));
+
+        // If we just removed the last row on this page, go back one page
+        // to avoid showing an empty/out-of-range page.
+        if (prevLen <= 1 && currentPage > 1) {
+            setCurrentPage((p) => Math.max(1, p - 1));
+            return;
+        }
+
         loadData();
     };
 
@@ -161,6 +187,13 @@ export default function DataList({
 
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + data.length, total);
+    const rangeLabel = loading
+        ? "Loading..."
+        : total === 0
+            ? `0 ${itemName}`
+            : data.length === 0
+                ? `0 ${itemName}`
+                : `${startIndex + 1}-${endIndex} of ${total} ${itemName}`;
 
     return (
         <div>
@@ -195,7 +228,7 @@ export default function DataList({
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                            {loading ? "Loading..." : total > 0 ? `${startIndex + 1}-${endIndex} of ${total}` : `0`} {itemName}
+                            {rangeLabel}
                         </span>
                         <select 
                             value={pageSize} 
