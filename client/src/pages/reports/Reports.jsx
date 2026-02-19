@@ -1,16 +1,15 @@
 import React from "react";
-import { http } from "../../api/http.js";
+import { getReportData } from "../../api/reports.api.js";
 import { formatBaht, formatDate } from "../../utils.js";
 import ReportFilters from "./filters/ReportFilters.jsx";
 import PaginationFilter from "./filters/PaginationFilter.jsx";
 import ReportTable from "../../components/ReportTable.jsx";
 
-// Config per report type: title, API endpoint, table columns (getColumns receives filters e.g. to show date range)
+// UI config per report type (title, columns, empty message). API calls go through api/reports.api.js.
 const REPORT_CONFIG = {
   "product-sales": {
     title: "Total Sales Performance",
     subtitle: "Revenue breakdown by product",
-    endpoint: "/api/reports/product-sales",
     emptyMessage: "No sales records found.",
     getColumns: (filters) => {
       const hasDateFilter = filters?.dateFrom || filters?.dateTo;
@@ -43,7 +42,6 @@ const REPORT_CONFIG = {
   "monthly-sales": {
     title: "Monthly Product Sales",
     subtitle: "Sales trends over time",
-    endpoint: "/api/reports/product-monthly-sales",
     emptyMessage: "No monthly records found.",
     getColumns: (filters) => [
       { key: "year", label: "Month/Year", sortable: true, render: (_, row) => `${new Date(0, row.month - 1).toLocaleString('default', { month: 'long' })} ${row.year}` },
@@ -55,7 +53,6 @@ const REPORT_CONFIG = {
   "customer-sales": {
     title: "Customer Buying Patterns",
     subtitle: "Product purchases by customer",
-    endpoint: "/api/reports/customer-sales",
     emptyMessage: "No customer records found.",
     getColumns: (filters) => {
       const hasDateFilter = filters?.dateFrom || filters?.dateTo;
@@ -110,38 +107,28 @@ export default function Reports({ type = "product-sales" }) {
   const fetchData = React.useCallback((currentPage = page, currentLimit = limit, currentSortKey = sortKey, currentSortDir = sortDir) => {
     setLoading(true);
     setErr("");
-    
-    const params = new URLSearchParams();
-    if (appliedFilters.productId) params.set("product_id", appliedFilters.productId);
-    if (appliedFilters.customerId) params.set("customer_id", appliedFilters.customerId);
-    if (appliedFilters.dateFrom) params.set("date_from", appliedFilters.dateFrom);
-    if (appliedFilters.dateTo) params.set("date_to", appliedFilters.dateTo);
-    if (appliedFilters.year) params.set("year", appliedFilters.year);
-    if (appliedFilters.month) params.set("month", appliedFilters.month);
-    if (currentSortKey) {
-      params.set("sortBy", currentSortKey);
-      params.set("sortDir", currentSortDir);
-    }
-    params.set("page", currentPage);
-    params.set("limit", currentLimit);
-    
-    const qs = params.toString();
-    http(config.endpoint + (qs ? `?${qs}` : ""))
-      .then(res => {
-        if (res && res.success === false && res.error) {
-          setErr(res.error.message || "Request failed");
-          setLoading(false);
-          return;
-        }
-        const meta = res.meta || {};
+    const params = {
+      product_id: appliedFilters.productId || undefined,
+      customer_id: appliedFilters.customerId || undefined,
+      date_from: appliedFilters.dateFrom || undefined,
+      date_to: appliedFilters.dateTo || undefined,
+      year: appliedFilters.year || undefined,
+      month: appliedFilters.month || undefined,
+      page: currentPage,
+      limit: currentLimit,
+      sortBy: currentSortKey || undefined,
+      sortDir: currentSortDir || undefined,
+    };
+    getReportData(type, params)
+      .then((res) => {
         setData(res.data || []);
-        setTotal(meta.total ?? 0);
-        setTotalPages(meta.totalPages ?? 0);
-        setPage(meta.page ?? 1);
-        setLoading(false);
+        setTotal(res.total ?? 0);
+        setTotalPages(res.totalPages ?? 0);
+        setPage(res.page ?? 1);
       })
-      .catch(e => { setErr(String(e.message || e)); setLoading(false); });
-  }, [config.endpoint, appliedFilters, page, limit, sortKey, sortDir]);
+      .catch((e) => setErr(String(e.message || e)))
+      .finally(() => setLoading(false));
+  }, [type, appliedFilters, page, limit, sortKey, sortDir]);
 
   // Reset when changing report type
   React.useEffect(() => {
