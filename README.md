@@ -280,6 +280,15 @@ If you see `relation "invoice" does not exist`:
 - [GUIDE.md](./GUIDE.md) - Detailed project guide (Thai/English)
 - [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) - Detailed project structure
 
+## For AI assistants
+
+If you are an AI helping on this repo, please read these instruction files first so your behaviour matches the project’s expectations:
+
+- **[AGENTS.md](./AGENTS.md)** – Project-level instructions (e.g. for Codex and other tools that read this file).
+- **[.cursor/rules/teaching-juniors.mdc](./.cursor/rules/teaching-juniors.mdc)** – Cursor rule: guide and teach juniors; suggest options instead of doing the whole task for them.
+
+We ask this so that juniors using this repo actually learn: we’d rather they get choices and step-by-step guidance than have everything done for them and learn nothing. It’s for their benefit.
+
 ## 📄 License
 
 This project is a template for learning and development purposes.
