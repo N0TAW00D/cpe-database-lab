@@ -21,8 +21,9 @@ export async function createProduct(req, res) {
 
 export async function updateProduct(req, res) {
   try {
-    const { id } = req.params;
-    const result = await productsService.updateProduct(id, req.body);
+    const code = decodeURIComponent(req.params.code || "");
+    const result = await productsService.updateProductByCode(code, req.body);
+    if (!result) return sendError(res, "Product not found", 404);
     sendOk(res, result);
   } catch (err) {
     sendError(res, err?.message ?? String(err), 400);
@@ -31,9 +32,10 @@ export async function updateProduct(req, res) {
 
 export async function deleteProduct(req, res) {
   try {
-    const { id } = req.params;
+    const code = decodeURIComponent(req.params.code || "");
     const force = req.query.force === "true";
-    const result = await productsService.deleteProduct(id, { force });
+    const result = await productsService.deleteProductByCode(code, { force });
+    if (!result) return sendError(res, "Product not found", 404);
     sendOk(res, result);
   } catch (err) {
     sendError(res, err?.message ?? String(err), err?.statusCode ?? 500);
@@ -51,8 +53,8 @@ export async function listUnits(_req, res) {
 
 export async function getProduct(req, res) {
   try {
-    const { id } = req.params;
-    const row = await productsService.getProductById(id);
+    const code = decodeURIComponent(req.params.code || "");
+    const row = await productsService.getProductByCode(code);
     if (!row) return sendError(res, "Product not found", 404);
     sendOne(res, row);
   } catch (err) {

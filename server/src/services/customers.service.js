@@ -27,7 +27,8 @@ export async function listCustomers({
 
   const { rows } = await pool.query(
     `
-      SELECT * FROM customer
+      SELECT code, name, address_line1, address_line2, country_id, credit_limit, created_at
+      FROM customer
       WHERE code ILIKE $1 OR name ILIKE $1 OR address_line1 ILIKE $1
       ORDER BY ${sortColumn} ${sortDirection} NULLS LAST
       LIMIT $2 OFFSET $3
@@ -60,12 +61,12 @@ export async function createCustomer({
     resolvedCode = `C${nextId.toString().padStart(3, "0")}`;
   }
 
-  const { rows } = await pool.query(
-    "INSERT INTO customer (code, name, address_line1, address_line2, country_id, credit_limit) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+  await pool.query(
+    "INSERT INTO customer (code, name, address_line1, address_line2, country_id, credit_limit) VALUES ($1, $2, $3, $4, $5, $6)",
     [resolvedCode, name, address_line1, address_line2, country_id, credit_limit],
   );
 
-  return { id: rows[0].id, code: resolvedCode };
+  return { code: resolvedCode };
 }
 
 export async function updateCustomer(
@@ -122,7 +123,48 @@ export async function listCountries() {
 }
 
 export async function getCustomerById(id) {
-  const { rows } = await pool.query("SELECT * FROM customer WHERE id = $1", [id]);
+  const { rows } = await pool.query(
+    `SELECT c.code, c.name, c.address_line1, c.address_line2, c.country_id, c.credit_limit, c.created_at,
+            co.code AS country_code, co.name AS country_name
+     FROM customer c
+     LEFT JOIN country co ON co.id = c.country_id
+     WHERE c.id = $1`,
+    [id]
+  );
   return rows[0] ?? null;
+}
+
+/** Get customer by business key (code). Used by API so frontend does not send primary key. */
+export async function getCustomerByCode(code) {
+  if (!code || String(code).trim() === "") return null;
+  const { rows } = await pool.query(
+    `SELECT c.code, c.name, c.address_line1, c.address_line2, c.country_id, c.credit_limit, c.created_at,
+            co.code AS country_code, co.name AS country_name
+     FROM customer c
+     LEFT JOIN country co ON co.id = c.country_id
+     WHERE c.code = $1`,
+    [String(code).trim()]
+  );
+  return rows[0] ?? null;
+}
+
+/** Resolve customer code to id (internal use only; id never sent to client). */
+export async function resolveCustomerId(code) {
+  const r = await pool.query("SELECT id FROM customer WHERE code = $1", [String(code).trim()]);
+  return r.rowCount > 0 ? r.rows[0].id : null;
+}
+
+export async function updateCustomerByCode(code, body) {
+  const id = await resolveCustomerId(code);
+  if (id == null) return null;
+  await updateCustomer(id, body);
+  return { ok: true };
+}
+
+export async function deleteCustomerByCode(code, opts = {}) {
+  const id = await resolveCustomerId(code);
+  if (id == null) return null;
+  await deleteCustomer(id, opts);
+  return { ok: true };
 }
 

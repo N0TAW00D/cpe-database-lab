@@ -186,6 +186,89 @@ a {
   margin-bottom: 24px;
 }
 
+/* Invoice form: compact cards and spacing */
+.invoice-form .card {
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-sm);
+}
+
+.invoice-form .card .form-group {
+  margin-bottom: 12px;
+}
+
+.invoice-form .card .form-group:last-child,
+.invoice-form .card .form-group + div .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.invoice-form .card h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 12px 0;
+  letter-spacing: 0.02em;
+}
+
+.invoice-form .customer-details-readonly {
+  padding: 12px 14px;
+  margin-top: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+}
+
+.invoice-form .customer-details-readonly .form-label {
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.invoice-form .customer-details-readonly .form-control {
+  padding: 6px 10px;
+  font-size: 0.875rem;
+}
+
+.invoice-form .customer-details-readonly .section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Invoice page: balanced header and content width */
+.invoice-page .page-header {
+  margin-bottom: 20px;
+}
+
+.invoice-page .page-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.invoice-form-grid {
+  max-width: 100%;
+}
+
+.invoice-form .modern-table th {
+  padding: 8px 14px;
+  font-size: 0.7rem;
+}
+
+.invoice-form .modern-table td {
+  padding: 10px 14px;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 900px) {
+  .invoice-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -337,6 +420,17 @@ button {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-control:disabled {
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  cursor: default;
+  opacity: 1;
+}
+
+.customer-select-trigger:hover {
+  background: var(--bg-body);
 }
 
 /* Inline option: checkbox + label next to form control (e.g. "Auto" code) */

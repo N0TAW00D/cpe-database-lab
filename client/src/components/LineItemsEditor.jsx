@@ -1,13 +1,15 @@
 // Line items table: add/remove/reorder rows, insert row between. Drag-and-drop and up/down buttons.
-// Example usage: <LineItemsEditor searchProducts={async (q) => [...]} value={items} onChange={setItems} />
+// Example usage: <LineItemsEditor value={items} onChange={setItems} />
 import React, { useState } from "react";
 import { formatBaht } from "../utils.js";
-import SearchableSelect from "./SearchableSelect.jsx";
+import ProductPickerModal from "./ProductPickerModal.jsx";
 
-export default function LineItemsEditor({ searchProducts, value, onChange }) {
+export default function LineItemsEditor({ value, onChange }) {
     const items = value;
     const [dragIndex, setDragIndex] = useState(null);
     const [dragOverIndex, setDragOverIndex] = useState(null);
+    const [productPickerOpen, setProductPickerOpen] = useState(false);
+    const [pickerRowIndex, setPickerRowIndex] = useState(0);
 
     // Update one row by index
     function update(i, patch) {
@@ -19,13 +21,13 @@ export default function LineItemsEditor({ searchProducts, value, onChange }) {
     function addRow() {
         onChange([
             ...items,
-            { product_id: "", quantity: 1, unit_price: 0 },
+            { product_code: "", quantity: 1, unit_price: 0 },
         ]);
     }
 
     // Insert a new empty row after index i (add row in between)
     function insertRowAfter(i) {
-        const newRow = { product_id: "", quantity: 1, unit_price: 0 };
+        const newRow = { product_code: "", quantity: 1, unit_price: 0 };
         const next = [...items.slice(0, i + 1), newRow, ...items.slice(i + 1)];
         onChange(next);
     }
@@ -90,17 +92,14 @@ export default function LineItemsEditor({ searchProducts, value, onChange }) {
         setDragOverIndex(null);
     }
 
-    function onPickProduct(i, productId, productData) {
+    function onPickProduct(i, productCode, productData) {
         if (!productData) {
-            update(i, { product_id: "", product_label: "", units_code: "", unit_price: 0 });
+            update(i, { product_code: "", product_label: "", units_code: "", unit_price: 0 });
             return;
         }
 
-        // Check if this product already exists in another row
-        const existingIndex = items.findIndex((it, idx) => idx !== i && String(it.product_id) === String(productData.id));
-        
+        const existingIndex = items.findIndex((it, idx) => idx !== i && String(it.product_code) === String(productData.code));
         if (existingIndex !== -1) {
-            // Merge: add quantity to existing row and remove current row
             const currentQty = Number(items[i].quantity || 1);
             const existingQty = Number(items[existingIndex].quantity || 0);
             const newItems = items.filter((_, idx) => idx !== i);
@@ -111,7 +110,7 @@ export default function LineItemsEditor({ searchProducts, value, onChange }) {
             onChange(newItems);
         } else {
             update(i, { 
-                product_id: productData.id, 
+                product_code: productData.code, 
                 product_label: productData.label,
                 units_code: productData.units_code,
                 unit_price: Number(productData.unit_price || 0) 
@@ -177,13 +176,13 @@ export default function LineItemsEditor({ searchProducts, value, onChange }) {
                 display: "flex", 
                 justifyContent: "space-between", 
                 alignItems: "center",
-                marginBottom: 20,
-                paddingBottom: 16,
+                marginBottom: 12,
+                paddingBottom: 12,
                 borderBottom: '1px solid var(--border)'
             }}>
                 <div>
-                    <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>Line Items</h4>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-main)' }}>Line Items</h4>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                         {items.length} item{items.length !== 1 ? 's' : ''} added • Drag to reorder
                     </span>
                 </div>
@@ -257,14 +256,62 @@ export default function LineItemsEditor({ searchProducts, value, onChange }) {
                                         </div>
                                     </td>
                                     <td>
-                                        <SearchableSelect
-                                            onSearch={searchProducts}
-                                            value={it.product_id}
-                                            selectedLabel={it.product_label || ""}
-                                            onChange={(val, label, data) => onPickProduct(i, val, data)}
-                                            placeholder="Search product..."
-                                            error={!it.product_id}
-                                        />
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                gap: 0,
+                                                alignItems: "stretch",
+                                                border: "1px solid var(--border)",
+                                                borderRadius: "var(--radius-sm)",
+                                                overflow: "hidden",
+                                                minHeight: 38,
+                                            }}
+                                        >
+                                            <button
+                                                type="button"
+                                                className="customer-select-trigger"
+                                                onClick={() => { setPickerRowIndex(i); setProductPickerOpen(true); }}
+                                                style={{
+                                                    flex: 1,
+                                                    textAlign: "left",
+                                                    padding: "8px 12px",
+                                                    border: "none",
+                                                    background: "var(--bg-surface)",
+                                                    color: it.product_label ? "var(--text-main)" : "var(--text-muted)",
+                                                    fontSize: "0.95rem",
+                                                    cursor: "pointer",
+                                                }}
+                                            >
+                                                {it.product_label || "Select product..."}
+                                            </button>
+                                            {it.product_code && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); onPickProduct(i, "", null); }}
+                                                    title="Clear"
+                                                    style={{
+                                                        padding: "0 10px",
+                                                        border: "none",
+                                                        borderLeft: "1px solid var(--border)",
+                                                        background: "var(--bg-body)",
+                                                        color: "var(--text-muted)",
+                                                        cursor: "pointer",
+                                                        fontSize: "1.2rem",
+                                                        lineHeight: 1,
+                                                    }}
+                                                >
+                                                    ×
+                                                </button>
+                                            )}
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary"
+                                                style={{ borderRadius: 0, flexShrink: 0, padding: "8px 14px" }}
+                                                onClick={() => { setPickerRowIndex(i); setProductPickerOpen(true); }}
+                                            >
+                                                Select
+                                            </button>
+                                        </div>
                                     </td>
                                     <td className="text-center">
                                         <span style={{ 
@@ -433,6 +480,20 @@ export default function LineItemsEditor({ searchProducts, value, onChange }) {
                     </div>
                 </div>
             )}
+
+            <ProductPickerModal
+                isOpen={productPickerOpen}
+                onClose={() => setProductPickerOpen(false)}
+                onSelect={(row) => {
+                    const productData = {
+                        code: row.code,
+                        label: `${row.code} - ${row.name}`,
+                        units_code: row.units_code,
+                        unit_price: Number(row.unit_price || 0),
+                    };
+                    onPickProduct(pickerRowIndex, row.code, productData);
+                }}
+            />
         </div>
     );
 }

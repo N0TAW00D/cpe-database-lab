@@ -109,8 +109,8 @@ export default function Reports({ type = "product-sales" }) {
     setLoading(true);
     setErr("");
     const params = {
-      product_id: appliedFilters.productId || undefined,
-      customer_id: appliedFilters.customerId || undefined,
+      product_code: appliedFilters.productCode || undefined,
+      customer_code: appliedFilters.customerCode || undefined,
       date_from: appliedFilters.dateFrom || undefined,
       date_to: appliedFilters.dateTo || undefined,
       year: appliedFilters.year || undefined,

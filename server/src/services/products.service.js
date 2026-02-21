@@ -33,7 +33,7 @@ export async function listProducts({
 
   const { rows } = await pool.query(
     `
-      SELECT p.id, p.code, p.name, p.unit_price, u.code as units_code, p.units_id
+      SELECT p.code, p.name, p.unit_price, u.code as units_code, p.units_id
       FROM product p
       JOIN units u ON u.id = p.units_id
       WHERE p.code ILIKE $1 OR p.name ILIKE $1 OR u.code ILIKE $1
@@ -61,11 +61,11 @@ export async function createProduct({ code, name, units_id, unit_price } = {}) {
     resolvedCode = `P${nextId.toString().padStart(3, "0")}`;
   }
 
-  const { rows } = await pool.query(
-    "INSERT INTO product (code, name, units_id, unit_price) VALUES ($1, $2, $3, $4) RETURNING id",
+  await pool.query(
+    "INSERT INTO product (code, name, units_id, unit_price) VALUES ($1, $2, $3, $4)",
     [resolvedCode, name, units_id, unit_price],
   );
-  return { id: rows[0].id, code: resolvedCode };
+  return { code: resolvedCode };
 }
 
 export async function updateProduct(id, { code, name, units_id, unit_price } = {}) {
@@ -126,7 +126,7 @@ export async function listUnits() {
 export async function getProductById(id) {
   const { rows } = await pool.query(
     `
-      SELECT p.id, p.code, p.name, p.unit_price, u.code as units_code, p.units_id
+      SELECT p.code, p.name, p.unit_price, u.code as units_code, p.units_id
       FROM product p
       JOIN units u ON u.id = p.units_id
       WHERE p.id = $1
@@ -134,5 +134,40 @@ export async function getProductById(id) {
     [id],
   );
   return rows[0] ?? null;
+}
+
+/** Get product by business key (code). Used by API so frontend does not send primary key. */
+export async function getProductByCode(code) {
+  if (!code || String(code).trim() === "") return null;
+  const { rows } = await pool.query(
+    `
+      SELECT p.code, p.name, p.unit_price, u.code as units_code, p.units_id
+      FROM product p
+      JOIN units u ON u.id = p.units_id
+      WHERE p.code = $1
+    `,
+    [String(code).trim()],
+  );
+  return rows[0] ?? null;
+}
+
+/** Resolve product code to id (internal use only; id never sent to client). */
+export async function resolveProductId(code) {
+  const r = await pool.query("SELECT id FROM product WHERE code = $1", [String(code).trim()]);
+  return r.rowCount > 0 ? r.rows[0].id : null;
+}
+
+export async function updateProductByCode(code, body) {
+  const id = await resolveProductId(code);
+  if (id == null) return null;
+  await updateProduct(id, body);
+  return { ok: true };
+}
+
+export async function deleteProductByCode(code, opts = {}) {
+  const id = await resolveProductId(code);
+  if (id == null) return null;
+  await deleteProduct(id, opts);
+  return { ok: true };
 }
 

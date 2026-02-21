@@ -23,8 +23,8 @@ export async function getReportData(type, params = {}) {
   const path = REPORT_ENDPOINTS[type] || REPORT_ENDPOINTS["product-sales"];
   const qs = new URLSearchParams();
   const keys = [
-    "product_id",
-    "customer_id",
+    "product_code",
+    "customer_code",
     "date_from",
     "date_to",
     "year",

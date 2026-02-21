@@ -14,6 +14,7 @@ export async function getInvoicesMonthlySummary() {
 
 export async function getSalesByProductSummary({
   product_id,
+  product_code,
   date_from,
   date_to,
   page = 1,
@@ -22,14 +23,19 @@ export async function getSalesByProductSummary({
   sortDir = "desc",
 } = {}) {
   const offset = (Number(page) - 1) * Number(limit);
+  let resolvedProductId = product_id;
+  if (!resolvedProductId && product_code) {
+    const r = await pool.query("SELECT id FROM product WHERE code = $1", [String(product_code).trim()]);
+    if (r.rowCount > 0) resolvedProductId = r.rows[0].id;
+  }
 
   let whereClause = "WHERE 1=1";
   const params = [];
   let paramIndex = 1;
 
-  if (product_id) {
+  if (resolvedProductId) {
     whereClause += ` AND p.id = $${paramIndex++}`;
-    params.push(product_id);
+    params.push(resolvedProductId);
   }
   if (date_from) {
     whereClause += ` AND i.invoice_date >= $${paramIndex++}`;
@@ -63,7 +69,7 @@ export async function getSalesByProductSummary({
 
   const { rows } = await pool.query(
     `
-      SELECT p.id as product_id, p.code as product_code, p.name as product_name,
+      SELECT p.code as product_code, p.name as product_name,
              SUM(li.quantity) as quantity_sold,
              SUM(li.extended_price) as value_sold
       FROM invoice_line_item li
@@ -88,7 +94,9 @@ export async function getSalesByProductSummary({
 
 export async function getSalesByCustomerSummary({
   product_id,
+  product_code,
   customer_id,
+  customer_code,
   date_from,
   date_to,
   page = 1,
@@ -97,18 +105,28 @@ export async function getSalesByCustomerSummary({
   sortDir = "asc",
 } = {}) {
   const offset = (Number(page) - 1) * Number(limit);
+  let resolvedProductId = product_id;
+  if (!resolvedProductId && product_code) {
+    const r = await pool.query("SELECT id FROM product WHERE code = $1", [String(product_code).trim()]);
+    if (r.rowCount > 0) resolvedProductId = r.rows[0].id;
+  }
+  let resolvedCustomerId = customer_id;
+  if (!resolvedCustomerId && customer_code) {
+    const r = await pool.query("SELECT id FROM customer WHERE code = $1", [String(customer_code).trim()]);
+    if (r.rowCount > 0) resolvedCustomerId = r.rows[0].id;
+  }
 
   let whereClause = "WHERE 1=1";
   const params = [];
   let paramIndex = 1;
 
-  if (product_id) {
+  if (resolvedProductId) {
     whereClause += ` AND p.id = $${paramIndex++}`;
-    params.push(product_id);
+    params.push(resolvedProductId);
   }
-  if (customer_id) {
+  if (resolvedCustomerId) {
     whereClause += ` AND c.id = $${paramIndex++}`;
-    params.push(customer_id);
+    params.push(resolvedCustomerId);
   }
   if (date_from) {
     whereClause += ` AND i.invoice_date >= $${paramIndex++}`;
@@ -147,8 +165,8 @@ export async function getSalesByCustomerSummary({
 
   const { rows } = await pool.query(
     `
-      SELECT p.id as product_id, p.code as product_code, p.name as product_name,
-             c.id as customer_id, c.code as customer_code, c.name as customer_name,
+      SELECT p.code as product_code, p.name as product_name,
+             c.code as customer_code, c.name as customer_name,
              SUM(li.quantity) as quantity_sold,
              SUM(li.extended_price) as value_sold
       FROM invoice i
@@ -174,6 +192,7 @@ export async function getSalesByCustomerSummary({
 
 export async function getSalesByProductMonthlySummary({
   product_id,
+  product_code,
   year,
   month,
   date_from,
@@ -184,14 +203,19 @@ export async function getSalesByProductMonthlySummary({
   sortDir = "desc",
 } = {}) {
   const offset = (Number(page) - 1) * Number(limit);
+  let resolvedProductId = product_id;
+  if (!resolvedProductId && product_code) {
+    const r = await pool.query("SELECT id FROM product WHERE code = $1", [String(product_code).trim()]);
+    if (r.rowCount > 0) resolvedProductId = r.rows[0].id;
+  }
 
   let whereClause = "WHERE 1=1";
   const params = [];
   let paramIndex = 1;
 
-  if (product_id) {
+  if (resolvedProductId) {
     whereClause += ` AND p.id = $${paramIndex++}`;
-    params.push(product_id);
+    params.push(resolvedProductId);
   }
   if (year) {
     whereClause += ` AND EXTRACT(year FROM i.invoice_date) = $${paramIndex++}`;
@@ -252,7 +276,6 @@ export async function getSalesByProductMonthlySummary({
       SELECT
         EXTRACT(year FROM i.invoice_date) as year,
         EXTRACT(month FROM i.invoice_date) as month,
-        p.id as product_id,
         p.code as product_code,
         p.name as product_name,
         SUM(li.quantity) as quantity_sold,

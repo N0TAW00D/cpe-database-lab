@@ -29,7 +29,7 @@ export async function listInvoices({
 
   const { rows } = await pool.query(
     `
-      SELECT i.id, i.invoice_no, i.invoice_date, i.amount_due,
+      SELECT i.invoice_no, i.invoice_date, i.amount_due,
              c.name as customer_name
       FROM invoice i
       JOIN customer c ON c.id = i.customer_id
@@ -49,10 +49,26 @@ export async function listInvoices({
   };
 }
 
-export async function getInvoice(id) {
+/** Resolve invoice_no to id (for internal use). */
+async function resolveInvoiceId(invoice_no) {
+  const r = await pool.query("SELECT id FROM invoice WHERE invoice_no = $1", [invoice_no]);
+  return r.rowCount > 0 ? r.rows[0].id : null;
+}
+
+export async function getInvoice(idOrInvoiceNo) {
+  // Support both id (number) and invoice_no (string) for backward compatibility during migration
+  let id = idOrInvoiceNo;
+  if (typeof idOrInvoiceNo === "string" && String(idOrInvoiceNo).trim() !== "" && isNaN(Number(idOrInvoiceNo))) {
+    id = await resolveInvoiceId(String(idOrInvoiceNo).trim());
+    if (id == null) return null;
+  } else {
+    id = Number(idOrInvoiceNo);
+  }
+
   const header = await pool.query(
     `
-      select i.*, c.code as customer_code, c.name as customer_name,
+      select i.invoice_no, i.invoice_date, i.total_amount, i.vat, i.amount_due,
+             c.code as customer_code, c.name as customer_name,
              c.address_line1, c.address_line2,
              co.name as country_name
       from invoice i
@@ -67,7 +83,7 @@ export async function getInvoice(id) {
 
   const lines = await pool.query(
     `
-      select li.id, li.product_id, p.code as product_code, p.name as product_name,
+      select p.code as product_code, p.name as product_name,
              u.code as units_code,
              li.quantity, li.unit_price, li.extended_price
       from invoice_line_item li
@@ -82,24 +98,34 @@ export async function getInvoice(id) {
   return { header: header.rows[0], line_items: lines.rows };
 }
 
-function enrichLineItems(client, line_items) {
-  return (async () => {
-    const enriched = [];
-    for (const li of line_items) {
-      const pr = await client.query("select unit_price from product where id=$1", [li.product_id]);
-      if (pr.rowCount === 0) throw new Error(`product_id ${li.product_id} not found`);
-      const unit_price = li.unit_price ?? Number(pr.rows[0].unit_price ?? 0);
-      const extended_price = Number(li.quantity) * Number(unit_price);
-      enriched.push({ ...li, unit_price, extended_price });
-    }
-    return enriched;
-  })();
+/** Resolve product_code to id and get unit_price. line_items use product_code (not product_id). */
+async function enrichLineItems(client, line_items) {
+  const enriched = [];
+  for (const li of line_items) {
+    const product_code = li.product_code != null ? String(li.product_code).trim() : null;
+    if (!product_code) throw new Error("Line item missing product_code");
+    const pr = await client.query(
+      "SELECT id, unit_price FROM product WHERE code = $1",
+      [product_code],
+    );
+    if (pr.rowCount === 0) throw new Error(`Product not found: ${product_code}`);
+    const product_id = pr.rows[0].id;
+    const unit_price = li.unit_price ?? Number(pr.rows[0].unit_price ?? 0);
+    const extended_price = Number(li.quantity) * Number(unit_price);
+    enriched.push({ ...li, product_id, unit_price, extended_price });
+  }
+  return enriched;
 }
 
-export async function createInvoice({ invoice_no, customer_id, invoice_date, vat_rate, line_items }) {
+export async function createInvoice({ invoice_no, customer_code, invoice_date, vat_rate, line_items }) {
   const client = await pool.connect();
   try {
     await client.query("begin");
+
+    const code = customer_code != null ? String(customer_code).trim() : "";
+    const cust = await client.query("SELECT id, credit_limit FROM customer WHERE code = $1", [code]);
+    if (cust.rowCount === 0) throw new Error(`Customer not found: ${code}`);
+    const customer_id = cust.rows[0].id;
 
     let resolvedInvoiceNo = invoice_no;
     if (!resolvedInvoiceNo || String(resolvedInvoiceNo).trim() === "") {
@@ -114,9 +140,7 @@ export async function createInvoice({ invoice_no, customer_id, invoice_date, vat
     const vat = total * vat_rate;
     const amount_due = total + vat;
 
-    // Enforce customer credit limit: amount_due must not exceed credit_limit (if set)
-    const cust = await client.query("SELECT credit_limit FROM customer WHERE id=$1", [customer_id]);
-    if (cust.rowCount > 0 && cust.rows[0].credit_limit != null) {
+    if (cust.rows[0].credit_limit != null) {
       const limit = Number(cust.rows[0].credit_limit);
       if (amount_due > limit) {
         throw new Error(`Amount due (${amount_due}) exceeds customer credit limit (${limit}).`);
@@ -131,7 +155,7 @@ export async function createInvoice({ invoice_no, customer_id, invoice_date, vat
           now(),
           $1,$2,$3,$4,$5,$6
         )
-        returning id
+        returning id, invoice_no
       `,
       [resolvedInvoiceNo, invoice_date, customer_id, total, vat, amount_due],
     );
@@ -153,7 +177,7 @@ export async function createInvoice({ invoice_no, customer_id, invoice_date, vat
     }
 
     await client.query("commit");
-    return { id: invoice_id };
+    return { invoice_no: inv.rows[0].invoice_no };
   } catch (err) {
     await client.query("rollback");
     throw err;
@@ -162,15 +186,35 @@ export async function createInvoice({ invoice_no, customer_id, invoice_date, vat
   }
 }
 
-export async function deleteInvoice(id) {
+export async function deleteInvoice(idOrInvoiceNo) {
+  let id = idOrInvoiceNo;
+  if (typeof idOrInvoiceNo === "string" && String(idOrInvoiceNo).trim() !== "" && isNaN(Number(idOrInvoiceNo))) {
+    id = await resolveInvoiceId(String(idOrInvoiceNo).trim());
+    if (id == null) return null;
+  } else {
+    id = Number(idOrInvoiceNo);
+  }
   await pool.query("delete from invoice where id=$1", [id]);
   return { ok: true };
 }
 
 export async function updateInvoice(
-  id,
-  { invoice_no, customer_id, invoice_date, vat_rate, line_items },
+  idOrInvoiceNo,
+  { invoice_no, customer_code, invoice_date, vat_rate, line_items },
 ) {
+  let id = idOrInvoiceNo;
+  if (typeof idOrInvoiceNo === "string" && String(idOrInvoiceNo).trim() !== "" && isNaN(Number(idOrInvoiceNo))) {
+    id = await resolveInvoiceId(String(idOrInvoiceNo).trim());
+    if (id == null) return null;
+  } else {
+    id = Number(idOrInvoiceNo);
+  }
+
+  const code = customer_code != null ? String(customer_code).trim() : "";
+  const cust = await pool.query("SELECT id, credit_limit FROM customer WHERE code = $1", [code]);
+  if (cust.rowCount === 0) throw new Error(`Customer not found: ${code}`);
+  const customer_id = cust.rows[0].id;
+
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -181,16 +225,13 @@ export async function updateInvoice(
     const vat = total * vat_rate;
     const amount_due = total + vat;
 
-    // Enforce customer credit limit: amount_due must not exceed credit_limit (if set)
-    const cust = await client.query("SELECT credit_limit FROM customer WHERE id=$1", [customer_id]);
-    if (cust.rowCount > 0 && cust.rows[0].credit_limit != null) {
+    if (cust.rows[0].credit_limit != null) {
       const limit = Number(cust.rows[0].credit_limit);
       if (amount_due > limit) {
         throw new Error(`Amount due (${amount_due}) exceeds customer credit limit (${limit}).`);
       }
     }
 
-    // If invoice_no is empty (e.g. frontend sent "" for "auto"), keep existing value to avoid unique constraint
     let resolvedInvoiceNo = (invoice_no != null && String(invoice_no).trim() !== "") ? String(invoice_no).trim() : null;
     if (resolvedInvoiceNo === null) {
       const cur = await client.query("SELECT invoice_no FROM invoice WHERE id=$1", [id]);
@@ -224,7 +265,8 @@ export async function updateInvoice(
     }
 
     await client.query("commit");
-    return { id };
+    const inv = await pool.query("SELECT invoice_no FROM invoice WHERE id = $1", [id]);
+    return { invoice_no: inv.rows[0]?.invoice_no };
   } catch (err) {
     await client.query("rollback");
     throw err;

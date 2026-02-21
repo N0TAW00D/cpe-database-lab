@@ -76,6 +76,7 @@ export default function CustomerList() {
                 searchPlaceholder="Search code, name, address..."
                 itemName="customers"
                 basePath="/customers"
+                itemKey="code"
                 onDelete={handleDelete}
                 refreshTrigger={refreshTrigger}
             />

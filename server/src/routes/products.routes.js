@@ -8,11 +8,10 @@ const r = Router();
 // List products with pagination, search, sort
 r.get("/", c.listProducts);
 r.post("/", c.createProduct);
-r.put("/:id", c.updateProduct);
-// DELETE product (supports ?force=true)
-r.delete("/:id", c.deleteProduct);
 r.get("/units", c.listUnits);
-// Get single product (must be after /units)
-r.get("/:id", c.getProduct);
+// Get/update/delete by business key (code), not primary key
+r.put("/:code", c.updateProduct);
+r.delete("/:code", c.deleteProduct);
+r.get("/:code", c.getProduct);
 
 export default r;

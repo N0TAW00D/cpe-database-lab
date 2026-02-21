@@ -64,6 +64,7 @@ export default function InvoiceList() {
                 searchPlaceholder="Search invoice no, customer..."
                 itemName="invoices"
                 basePath="/invoices"
+                itemKey="invoice_no"
                 onDelete={handleDelete}
             />
         </>

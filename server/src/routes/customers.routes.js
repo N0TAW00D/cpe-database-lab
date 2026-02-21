@@ -9,11 +9,10 @@ const r = Router();
 r.get("/", c.listCustomers);
 // Create customer (supports auto code)
 r.post("/", c.createCustomer);
-r.put("/:id", c.updateCustomer);
-// DELETE customer (supports ?force=true)
-r.delete("/:id", c.deleteCustomer);
 r.get("/countries", c.listCountries);
-// Get single customer (must be after /countries)
-r.get("/:id", c.getCustomer);
+// Get/update/delete by business key (code), not primary key
+r.put("/:code", c.updateCustomer);
+r.delete("/:code", c.deleteCustomer);
+r.get("/:code", c.getCustomer);
 
 export default r;

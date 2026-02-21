@@ -17,12 +17,12 @@ export default function ProductFilter({ value, onChange }) {
       <select
         className="form-control"
         value={value}
-        onChange={(e) => onChange({ productId: e.target.value })}
+        onChange={(e) => onChange({ productCode: e.target.value })}
         disabled={loading}
       >
         <option value="">All Products</option>
         {products.map(p => (
-          <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+          <option key={p.code} value={p.code}>{p.code} - {p.name}</option>
         ))}
       </select>
     </div>

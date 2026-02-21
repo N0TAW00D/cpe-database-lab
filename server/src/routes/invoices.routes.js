@@ -5,9 +5,9 @@ import * as c from "../controllers/invoices.controller.js";
 
 const r = Router();
 r.get("/", c.listInvoices);
-r.get("/:id", c.getInvoice);
+r.get("/:invoiceNo", c.getInvoice);
 r.post("/", c.createInvoice);
-r.delete("/:id", c.deleteInvoice);
-r.put("/:id", c.updateInvoice);
+r.delete("/:invoiceNo", c.deleteInvoice);
+r.put("/:invoiceNo", c.updateInvoice);
 
 export default r;

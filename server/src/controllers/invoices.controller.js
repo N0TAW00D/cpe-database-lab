@@ -14,8 +14,8 @@ export async function listInvoices(req, res) {
 
 export async function getInvoice(req, res) {
   try {
-    const id = Number(req.params.id);
-    const result = await invoicesService.getInvoice(id);
+    const invoiceNo = decodeURIComponent(req.params.invoiceNo || "");
+    const result = await invoicesService.getInvoice(invoiceNo);
     if (!result) return sendError(res, "Invoice not found", 404);
     sendOne(res, result);
   } catch (err) {
@@ -37,8 +37,9 @@ export async function createInvoice(req, res) {
 
 export async function deleteInvoice(req, res) {
   try {
-    const id = Number(req.params.id);
-    const result = await invoicesService.deleteInvoice(id);
+    const invoiceNo = decodeURIComponent(req.params.invoiceNo || "");
+    const result = await invoicesService.deleteInvoice(invoiceNo);
+    if (!result) return sendError(res, "Invoice not found", 404);
     sendOk(res, result);
   } catch (err) {
     sendError(res, err?.message ?? String(err), 500);
@@ -49,8 +50,9 @@ export async function updateInvoice(req, res) {
   const parsed = CreateInvoiceSchema.safeParse(req.body);
   if (!parsed.success) return sendError(res, "Validation failed", 400, "VALIDATION_ERROR", parsed.error.flatten());
   try {
-    const id = Number(req.params.id);
-    const result = await invoicesService.updateInvoice(id, parsed.data);
+    const invoiceNo = decodeURIComponent(req.params.invoiceNo || "");
+    const result = await invoicesService.updateInvoice(invoiceNo, parsed.data);
+    if (!result) return sendError(res, "Invoice not found", 404);
     sendOk(res, result);
   } catch (err) {
     sendError(res, err?.message ?? String(err), 500);

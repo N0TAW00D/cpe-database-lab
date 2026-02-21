@@ -69,6 +69,7 @@ export default function ProductList() {
                 searchPlaceholder="Search code, name, unit..."
                 itemName="products"
                 basePath="/products"
+                itemKey="code"
                 onDelete={handleDelete}
                 refreshTrigger={refreshTrigger}
             />

@@ -18,6 +18,7 @@ export default function DataList({
     searchPlaceholder = "Search...",
     itemName = "items",
     basePath = "",
+    itemKey = "id",
     onDelete,
     emptyMessage,
     defaultPageSize = 10,
@@ -95,9 +96,11 @@ export default function DataList({
         setCurrentPage(1);
     };
 
+    const getItemKey = (item) => item[itemKey] ?? item.id;
+
     // Notify parent that user clicked Delete; parent shows modal, calls API, then passes new refreshTrigger to refetch
-    const handleDelete = (id) => {
-        onDelete?.(id);
+    const handleDelete = (item) => {
+        onDelete?.(getItemKey(item));
     };
 
     // Generate page numbers to show
@@ -244,12 +247,15 @@ export default function DataList({
                                 <TableLoading colSpan={columns.length + 1} />
                             ) : (
                                 <>
-                                    {data.map(item => (
-                                        <tr key={item.id}>
+                                    {data.map(item => {
+                                        const keyVal = getItemKey(item);
+                                        const pathSegment = typeof keyVal === "string" ? encodeURIComponent(keyVal) : keyVal;
+                                        return (
+                                        <tr key={keyVal ?? item.id}>
                                             {columns.map((col, idx) => (
                                                 <td key={col.key} className={col.align === 'right' ? 'text-right' : ''} style={col.style}>
                                                     {idx === 0 ? (
-                                                        <Link to={`${basePath}/${item.id}`} style={{ fontWeight: 500, color: 'var(--primary)' }}>
+                                                        <Link to={`${basePath}/${pathSegment}`} style={{ fontWeight: 500, color: 'var(--primary)' }}>
                                                             {col.render ? col.render(item[col.key], item) : item[col.key]}
                                                         </Link>
                                                     ) : (
@@ -259,14 +265,14 @@ export default function DataList({
                                             ))}
                                             <td className="text-right">
                                                 <Link 
-                                                    to={`${basePath}/${item.id}/edit`} 
+                                                    to={`${basePath}/${pathSegment}/edit`} 
                                                     className="btn btn-outline" 
                                                     style={{ fontSize: '0.7rem', padding: '4px 8px', marginRight: 8 }}
                                                 >
                                                     Edit
                                                 </Link>
                                                 <button
-                                                    onClick={() => handleDelete(item.id)}
+                                                    onClick={() => handleDelete(item)}
                                                     className="btn btn-outline"
                                                     style={{ fontSize: '0.7rem', padding: '4px 8px', color: '#ef4444', borderColor: '#ef4444' }}
                                                 >
@@ -274,7 +280,7 @@ export default function DataList({
                                                 </button>
                                             </td>
                                         </tr>
-                                    ))}
+                                    );})}
                                     {data.length === 0 && (
                                         <tr>
                                             <td colSpan={columns.length + 1} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>

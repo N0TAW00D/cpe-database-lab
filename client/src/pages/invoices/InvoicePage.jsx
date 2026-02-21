@@ -4,8 +4,6 @@
 // - /invoices/:id/edit → mode="edit"
 import React from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
-import { listCustomers } from "../../api/customers.api.js";
-import { listProducts } from "../../api/products.api.js";
 import { getInvoice, createInvoice, updateInvoice } from "../../api/invoices.api.js";
 import { toast } from "react-toastify";
 import { formatBaht, formatDate } from "../../utils.js";
@@ -22,41 +20,6 @@ export default function InvoicePage({ mode: propMode }) {
     const [err, setErr] = React.useState("");
     const [submitting, setSubmitting] = React.useState(false);
     const [loading, setLoading] = React.useState(true);
-
-    // Search functions for async SearchableSelect (return max 10 results)
-    const searchCustomers = React.useCallback(async (query) => {
-        try {
-            const res = await listCustomers({ search: query, limit: 10 });
-            return (res.data || []).map(c => ({
-                value: c.id,
-                label: `${c.code} - ${c.name}`,
-                // Include extra data
-                id: c.id,
-                code: c.code,
-                name: c.name
-            }));
-        } catch {
-            return [];
-        }
-    }, []);
-
-    const searchProducts = React.useCallback(async (query) => {
-        try {
-            const res = await listProducts({ search: query, limit: 10 });
-            return (res.data || []).map(p => ({
-                value: p.id,
-                label: `${p.code} - ${p.name}`,
-                // Include extra data for LineItemsEditor
-                id: p.id,
-                code: p.code,
-                name: p.name,
-                unit_price: p.unit_price,
-                units_code: p.units_code
-            }));
-        } catch {
-            return [];
-        }
-    }, []);
 
     React.useEffect(() => {
         if (mode === "create") {
@@ -85,13 +48,15 @@ export default function InvoicePage({ mode: propMode }) {
 
                     setInitialData({
                         invoice_no: h.invoice_no,
-                        customer_id: h.customer_id,
+                        customer_code: h.customer_code,
                         customer_label: `${h.customer_code || ''} - ${h.customer_name}`.replace(/^ - /, ''),
                         invoice_date: h.invoice_date,
                         vat_rate: rate,
                         line_items: inv.line_items.map(li => ({
-                            ...li,
-                            product_label: `${li.product_code} - ${li.product_name}`
+                            product_code: li.product_code,
+                            product_label: `${li.product_code} - ${li.product_name}`,
+                            quantity: li.quantity,
+                            unit_price: li.unit_price
                         }))
                     });
                     setLoading(false);
@@ -110,11 +75,11 @@ export default function InvoicePage({ mode: propMode }) {
             if (mode === "create") {
                 const res = await createInvoice(payload);
                 toast.success("Invoice created.");
-                nav(`/invoices/${res.id}`);
+                nav(`/invoices/${encodeURIComponent(res.invoice_no)}`);
             } else {
                 await updateInvoice(id, payload);
                 toast.success("Invoice updated.");
-                nav(`/invoices/${id}`);
+                nav(`/invoices/${encodeURIComponent(id)}`);
             }
         } catch (e) {
             const msg = String(e.message || e);
@@ -221,7 +186,7 @@ export default function InvoicePage({ mode: propMode }) {
     const title = isCreate ? "Create Invoice" : `Edit Invoice ${id}`;
 
     return (
-        <div>
+        <div className="invoice-page">
             <div className="page-header">
                 <h3 className="page-title">{title}</h3>
                 <Link to="/invoices" className="btn btn-outline">
@@ -231,8 +196,6 @@ export default function InvoicePage({ mode: propMode }) {
             </div>
             {err && <div className="alert alert-error">{err}</div>}
             <InvoiceForm
-                searchCustomers={searchCustomers}
-                searchProducts={searchProducts}
                 onSubmit={onSubmit}
                 submitting={submitting}
                 initialData={isCreate ? null : initialData}

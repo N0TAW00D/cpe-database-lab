@@ -12,8 +12,8 @@ export async function listProducts(params = {}) {
   return { data: res.data, ...(res.meta || {}) };
 }
 
-export async function getProduct(id) {
-  const res = unwrap(await http(`/api/products/${id}`));
+export async function getProduct(code) {
+  const res = unwrap(await http(`/api/products/${encodeURIComponent(code)}`));
   return res.data;
 }
 
@@ -27,13 +27,13 @@ export async function createProduct(data) {
   return res.data;
 }
 
-export async function updateProduct(id, data) {
-  const res = unwrap(await http(`/api/products/${id}`, { method: "PUT", body: JSON.stringify(data) }));
+export async function updateProduct(code, data) {
+  const res = unwrap(await http(`/api/products/${encodeURIComponent(code)}`, { method: "PUT", body: JSON.stringify(data) }));
   return res.data;
 }
 
-export async function deleteProduct(id, force = false) {
-  const url = `/api/products/${id}` + (force ? "?force=true" : "");
+export async function deleteProduct(code, force = false) {
+  const url = `/api/products/${encodeURIComponent(code)}` + (force ? "?force=true" : "");
   const res = unwrap(await http(url, { method: "DELETE" }));
   return res.data;
 }

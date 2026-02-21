@@ -12,8 +12,8 @@ export async function listInvoices(params = {}) {
   return { data: res.data, ...(res.meta || {}) };
 }
 
-export async function getInvoice(id) {
-  const res = unwrap(await http(`/api/invoices/${id}`));
+export async function getInvoice(invoiceNo) {
+  const res = unwrap(await http(`/api/invoices/${encodeURIComponent(invoiceNo)}`));
   return res.data;
 }
 
@@ -22,12 +22,12 @@ export async function createInvoice(payload) {
   return res.data;
 }
 
-export async function deleteInvoice(id) {
-  const res = unwrap(await http(`/api/invoices/${id}`, { method: "DELETE" }));
+export async function deleteInvoice(invoiceNo) {
+  const res = unwrap(await http(`/api/invoices/${encodeURIComponent(invoiceNo)}`, { method: "DELETE" }));
   return res.data;
 }
 
-export async function updateInvoice(id, payload) {
-  const res = unwrap(await http(`/api/invoices/${id}`, { method: "PUT", body: JSON.stringify(payload) }));
+export async function updateInvoice(invoiceNo, payload) {
+  const res = unwrap(await http(`/api/invoices/${encodeURIComponent(invoiceNo)}`, { method: "PUT", body: JSON.stringify(payload) }));
   return res.data;
 }
