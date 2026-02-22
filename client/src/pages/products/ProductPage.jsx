@@ -56,8 +56,8 @@ export default function ProductPage({ mode: propMode }) {
             reset({
               code: product.code || "",
               name: product.name || "",
-              units_id: product.units_id ?? "",
-              unit_price: product.unit_price ?? "",
+              units_id: product.units_id != null ? String(product.units_id) : "",
+              unit_price: product.unit_price !== "" && product.unit_price != null ? String(product.unit_price) : "",
             });
           } else {
             setErr("Product not found");
@@ -109,6 +109,8 @@ export default function ProductPage({ mode: propMode }) {
     try {
       const payload = { ...data };
       if (mode === "create" && autoCode) payload.code = "";
+      if (payload.units_id !== "" && payload.units_id != null) payload.units_id = Number(payload.units_id);
+      if (payload.unit_price !== "" && payload.unit_price != null) payload.unit_price = Number(payload.unit_price);
 
       if (mode === "create") {
         await createProduct(payload);

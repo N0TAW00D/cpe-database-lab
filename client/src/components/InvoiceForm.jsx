@@ -70,6 +70,7 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
         line_item_id: li.line_item_id,
         product_code: li.product_code || "",
         product_label: li.product_label || `${li.product_code || ""} - ${li.product_name || ""}`.replace(/^ - /, ""),
+        units_code: li.units_code || "",
         quantity: li.quantity,
         unit_price: Number(li.unit_price)
       }));

@@ -2,12 +2,11 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { TableLoading } from "./Loading.jsx";
 
-/**
- * Reusable list picker modal: search, sort, pagination, select one row.
- * Props: title, searchPlaceholder, fetchData({ search, page, limit, sortBy, sortDir }),
- *        columns [{ key, label, align?, render?(value, row) }], itemName (e.g. "customer"),
- *        emptySearch, emptyDefault, getSelectLabel(row), onSelect(row), onClose.
- */
+function defaultSelectLabel(row) {
+  if (row.code != null && row.name != null) return `${row.code} - ${row.name}`;
+  return String(row.code ?? row.invoice_no ?? "");
+}
+
 export default function ListPickerModal({
   isOpen,
   onClose,
@@ -19,7 +18,7 @@ export default function ListPickerModal({
   itemName = "item",
   emptySearch = "No results found.",
   emptyDefault = "No items yet.",
-  getSelectLabel = (row) => (row.code != null && row.name != null ? `${row.code} - ${row.name}` : String(row.code ?? row.invoice_no ?? "")),
+  getSelectLabel = defaultSelectLabel,
   initialSearch = "",
 }) {
   const [data, setData] = React.useState([]);
@@ -68,15 +67,14 @@ export default function ListPickerModal({
     setPage(1);
   };
 
-  const initialSearchTrimmed = initialSearch != null && String(initialSearch).trim() !== "" ? String(initialSearch).trim() : "";
-  const useInitialForFetch = isOpen && initialSearchTrimmed !== "" && (searchInput === "" || searchInput === initialSearchTrimmed);
-  const effectiveSearch = useInitialForFetch ? initialSearchTrimmed : search;
+  const initial = (initialSearch != null && String(initialSearch).trim() !== "") ? String(initialSearch).trim() : "";
+  const searchToUse = (isOpen && initial !== "" && (searchInput === "" || searchInput === initial)) ? initial : search;
 
   React.useEffect(() => {
     if (!isOpen || !fetchData) return;
     let cancelled = false;
     setLoading(true);
-    fetchData({ search: effectiveSearch, page, limit, sortBy, sortDir })
+    fetchData({ search: searchToUse, page, limit, sortBy, sortDir })
       .then((res) => {
         if (cancelled) return;
         setData(res.data || []);
@@ -90,7 +88,7 @@ export default function ListPickerModal({
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [isOpen, fetchData, effectiveSearch, page, limit, sortBy, sortDir]);
+  }, [isOpen, fetchData, searchToUse, page, limit, sortBy, sortDir]);
 
   const handleSelect = (row) => {
     onSelect(row);
@@ -98,11 +96,11 @@ export default function ListPickerModal({
   };
 
   const getPageNumbers = () => {
+    const size = 5;
+    let start = Math.max(1, page - Math.floor(size / 2));
+    let end = Math.min(totalPages, start + size - 1);
+    if (end - start + 1 < size) start = Math.max(1, end - size + 1);
     const pages = [];
-    const maxVisible = 5;
-    let start = Math.max(1, page - Math.floor(maxVisible / 2));
-    let end = Math.min(totalPages, start + maxVisible - 1);
-    if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1);
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   };

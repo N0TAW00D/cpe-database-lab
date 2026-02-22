@@ -103,20 +103,13 @@ export default function DataList({
         onDelete?.(getItemKey(item));
     };
 
-    // Generate page numbers to show
     const getPageNumbers = () => {
+        const size = 5;
+        let start = Math.max(1, currentPage - Math.floor(size / 2));
+        let end = Math.min(totalPages, start + size - 1);
+        if (end - start + 1 < size) start = Math.max(1, end - size + 1);
         const pages = [];
-        const maxVisible = 5;
-        let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-        let end = Math.min(totalPages, start + maxVisible - 1);
-        
-        if (end - start + 1 < maxVisible) {
-            start = Math.max(1, end - maxVisible + 1);
-        }
-        
-        for (let i = start; i <= end; i++) {
-            pages.push(i);
-        }
+        for (let i = start; i <= end; i++) pages.push(i);
         return pages;
     };
 

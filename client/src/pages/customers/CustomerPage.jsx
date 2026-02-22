@@ -61,8 +61,8 @@ export default function CustomerPage({ mode: propMode }) {
               name: customer.name || "",
               address_line1: customer.address_line1 || "",
               address_line2: customer.address_line2 || "",
-              country_id: customer.country_id ?? "",
-              credit_limit: customer.credit_limit ?? "",
+              country_id: customer.country_id != null ? String(customer.country_id) : "",
+              credit_limit: customer.credit_limit !== "" && customer.credit_limit != null ? String(customer.credit_limit) : "",
             });
           } else {
             setErr("Customer not found");
@@ -116,6 +116,9 @@ export default function CustomerPage({ mode: propMode }) {
     try {
       const payload = { ...data };
       if (mode === "create" && autoCode) payload.code = "";
+      if (payload.credit_limit === "" || payload.credit_limit == null) payload.credit_limit = null;
+      else payload.credit_limit = Number(payload.credit_limit);
+      if (payload.country_id !== "" && payload.country_id != null) payload.country_id = Number(payload.country_id);
 
       if (mode === "create") {
         await createCustomer(payload);

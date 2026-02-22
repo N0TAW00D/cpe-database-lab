@@ -57,6 +57,7 @@ export default function InvoicePage({ mode: propMode }) {
                             product_code: li.product_code,
                             product_name: li.product_name,
                             product_label: `${li.product_code} - ${li.product_name}`,
+                            units_code: li.units_code,
                             quantity: li.quantity,
                             unit_price: li.unit_price
                         }))
