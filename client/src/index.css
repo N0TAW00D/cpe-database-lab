@@ -406,11 +406,19 @@ button {
   font-size: 0.9rem;
 }
 
+/* Required field marker (asterisk after label) */
 .required-marker {
   color: #dc2626;
   font-weight: 700;
   font-size: 1.05em;
   margin-left: 2px;
+}
+
+.form-error {
+  display: block;
+  font-size: 0.8rem;
+  color: #dc2626;
+  margin-top: 4px;
 }
 
 .form-control {

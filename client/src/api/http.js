@@ -2,7 +2,8 @@
 export const API_BASE = import.meta.env.VITE_API_BASE !== undefined ? import.meta.env.VITE_API_BASE : "http://localhost:4000";
 
 /**
- * Calls the backend API. Response shape: { success, data, meta? } or { success: false, error: { message } }.
+ * Calls the backend API.
+ * Response: { success, data, meta? } or { success: false, error: { message } }.
  * Throws Error if success is false or status is not 2xx.
  */
 export async function http(path, options = {}) {

@@ -15,6 +15,7 @@ const COLUMNS = [
 ];
 
 export default function CustomerPickerModal({ isOpen, onClose, onSelect, initialSearch = "" }) {
+  // useCallback: keeps the same function reference across renders (avoids unnecessary re-renders when passed to ListPickerModal)
   const fetchData = React.useCallback((params) => listCustomers(params), []);
 
   const handleSelect = React.useCallback(

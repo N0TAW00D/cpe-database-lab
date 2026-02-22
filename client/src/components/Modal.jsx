@@ -1,4 +1,5 @@
-// Modal overlay and variants: ConfirmModal (confirm/cancel), AlertModal (ok only). Rendered via portal.
+// Modal overlay and variants: ConfirmModal (confirm/cancel), AlertModal (ok only).
+// createPortal renders into document.body so the modal sits above all layers (z-index works correctly).
 import React from "react";
 import { createPortal } from "react-dom";
 

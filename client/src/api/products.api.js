@@ -1,6 +1,6 @@
 import { http } from "./http.js";
 
-// If backend returns success: false, throw the error.message
+// If backend returns success: false, throw the error message.
 function unwrap(res) {
   if (res && res.success === false && res.error) throw new Error(res.error.message);
   return res;
