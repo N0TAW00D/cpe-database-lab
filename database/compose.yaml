@@ -16,6 +16,8 @@ services:
   # https://hub.docker.com/_/postgres
     # Official Postgres image from DockerHub (we use the last version)
     image: "postgres:17-alpine3.22"
+    # Force amd64 image so it runs on Windows (Docker Desktop) and avoids exec format error
+    platform: linux/amd64
 
     restart: always
     # set shared memory limit when using docker compose
@@ -70,6 +72,7 @@ services:
 
   adminer:
     image: adminer
+    platform: linux/amd64
     restart: always
     ports:
       - 8080:8080
