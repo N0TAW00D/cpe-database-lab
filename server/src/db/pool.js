@@ -6,12 +6,16 @@ import logger from "../utils/logger.js";
 
 dotenv.config();
 
-// Default DATABASE_URL if not set in environment
-const DEFAULT_DATABASE_URL = "postgresql://root:root@localhost:15432/invoices_db";
+// Production requires DATABASE_URL; dev may use default for convenience.
+const connectionString =
+  process.env.DATABASE_URL ||
+  (process.env.NODE_ENV === "production"
+    ? (() => {
+        throw new Error("DATABASE_URL is required in production. Set it in your environment.");
+      })()
+    : "postgresql://root:root@localhost:15432/invoices_db");
 
-export const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL || DEFAULT_DATABASE_URL,
-});
+export const pool = new pg.Pool({ connectionString });
 
 pool.on("error", (err) => {
   logger.error("Database pool error", { message: err.message });

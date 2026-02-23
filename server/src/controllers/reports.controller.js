@@ -4,7 +4,8 @@ import { sendList, sendData, sendError } from "../utils/response.js";
 
 export async function getInvoicesMonthlySummary(req, res) {
   try {
-    const result = await reportsService.getInvoicesMonthlySummary();
+    const limit = req.query.limit != null ? req.query.limit : undefined;
+    const result = await reportsService.getInvoicesMonthlySummary({ limit });
     sendData(res, result.data);
   } catch (err) {
     sendError(res, err?.message ?? String(err), 500);

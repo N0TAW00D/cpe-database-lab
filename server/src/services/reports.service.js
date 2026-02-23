@@ -1,14 +1,16 @@
 // Report queries: sales by product, monthly sales, customer buying. All filters via parameterized queries.
 import { pool } from "../db/pool.js";
 
-export async function getInvoicesMonthlySummary() {
-  const { rows } = await pool.query(`
-    select i.invoice_no, i.invoice_date, c.name as customer_name, i.amount_due
-    from invoice i
-    join customer c on c.id = i.customer_id
-    order by i.invoice_date desc
-    limit 20
-  `);
+export async function getInvoicesMonthlySummary({ limit = 20 } = {}) {
+  const safeLimit = Math.min(Math.max(1, Number(limit) || 20), 500);
+  const { rows } = await pool.query(
+    `select i.invoice_no, i.invoice_date, c.name as customer_name, i.amount_due
+     from invoice i
+     join customer c on c.id = i.customer_id
+     order by i.invoice_date desc
+     limit $1`,
+    [safeLimit]
+  );
   return { data: rows };
 }
 
