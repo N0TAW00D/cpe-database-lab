@@ -91,6 +91,8 @@ INSERT INTO units (id, created_at, code, name) VALUES (3, '2026-01-12 17:50:54.3
 INSERT INTO units (id, created_at, code, name) VALUES (4, '2026-01-12 17:51:13.911009+00', 'PKT', 'Packets');
 
 -- Populating table: customer
+INSERT INTO customer (id, created_at, code, name, address_line1, address_line2, country_id, credit_limit) VALUES (1, '2026-01-26 09:26:00+00:00', 'C100', 'Placeholder Customer A', '1 Main St', '-', 1, 100000);
+INSERT INTO customer (id, created_at, code, name, address_line1, address_line2, country_id, credit_limit) VALUES (2, '2026-01-26 09:27:00+00:00', 'C101', 'Placeholder Customer B', '2 Main St', '-', 1, 50000);
 INSERT INTO customer (id, created_at, code, name, address_line1, address_line2, country_id, credit_limit) VALUES (3, '2026-01-26 09:28:00+00:00', 'C102', 'Siam Trading Co., Ltd.', '660 Rama IX Rd', 'Nonthaburi', 5, 1000000);
 INSERT INTO customer (id, created_at, code, name, address_line1, address_line2, country_id, credit_limit) VALUES (4, '2026-01-26 09:29:00+00:00', 'C103', 'Chao Phraya Trading Co., Ltd.', '260 Phetchaburi Rd', 'Nonthaburi', 5, 500000);
 INSERT INTO customer (id, created_at, code, name, address_line1, address_line2, country_id, credit_limit) VALUES (5, '2026-01-26 09:30:00+00:00', 'C104', 'Bangkok Trading Co., Ltd.', '286 Charan Sanitwong Rd', '-', 3, 100000);
@@ -100,7 +102,9 @@ INSERT INTO customer (id, created_at, code, name, address_line1, address_line2, 
 INSERT INTO customer (id, created_at, code, name, address_line1, address_line2, country_id, credit_limit) VALUES (9, '2026-01-26 09:34:00+00:00', 'C108', 'Krungthep Trading Co., Ltd.', '332 Bang Na-Trat Rd', 'Nonthaburi', 5, 500000);
 INSERT INTO customer (id, created_at, code, name, address_line1, address_line2, country_id, credit_limit) VALUES (10, '2026-01-26 09:35:00+00:00', 'C109', 'Mekong Trading Co., Ltd.', '915 Vibhavadi Rangsit Rd', 'Samut Prakan', 3, 100000);
 
--- Populating table: product
+INSERT INTO product (id, created_at, code, name, units_id, unit_price) VALUES (1, '2026-01-19 10:47:00+00:00', 'P001', 'Product A', 1, 20);
+INSERT INTO product (id, created_at, code, name, units_id, unit_price) VALUES (2, '2026-01-19 10:48:00+00:00', 'P002', 'Product B', 1, 20);
+INSERT INTO product (id, created_at, code, name, units_id, unit_price) VALUES (3, '2026-01-19 10:48:30+00:00', 'P003', 'Product C', 1, 25);
 INSERT INTO product (id, created_at, code, name, units_id, unit_price) VALUES (4, '2026-01-19 10:49:00+00:00', 'P200', 'Notebook A5', 1, 15.5);
 INSERT INTO product (id, created_at, code, name, units_id, unit_price) VALUES (5, '2026-01-19 10:50:00+00:00', 'P201', 'Notebook A4', 2, 60.25);
 INSERT INTO product (id, created_at, code, name, units_id, unit_price) VALUES (6, '2026-01-19 10:51:00+00:00', 'P202', 'Gel Pen Blue', 1, 25.75);
