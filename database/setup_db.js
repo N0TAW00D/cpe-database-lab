@@ -1,30 +1,26 @@
 #!/usr/bin/env node
 "use strict";
-const { execSync, spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const { spawnSafe, execShell } = require("../scripts/run-safe.js");
 
 const scriptDir = path.resolve(__dirname);
 const root = path.join(scriptDir, "..");
 const sqlPath = path.join(scriptDir, "sql", "sql_run.sql");
-const isWin = process.platform === "win32";
 const composePath = path.join(scriptDir, "compose.yaml");
 
-function run(cmd, opts = {}) {
-  return execSync(cmd, { cwd: opts.cwd || root, stdio: "inherit", shell: isWin, ...opts });
+function runCompose(args, opts = {}) {
+  const r = spawnSafe("docker-compose", ["-f", composePath, ...args], { cwd: opts.cwd || root, stdio: "inherit", ...opts });
+  return r.status === 0;
 }
 
-function runQuiet(cmd, opts = {}) {
-  try {
-    execSync(cmd, { cwd: opts.cwd || root, encoding: "utf8", stdio: "pipe", shell: isWin, ...opts });
-    return true;
-  } catch {
-    return false;
-  }
+function runComposeQuiet(args, opts = {}) {
+  const r = spawnSafe("docker-compose", ["-f", composePath, ...args], { cwd: opts.cwd || root, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], ...opts });
+  return r.status === 0 ? (r.stdout && r.stdout.toString()) : null;
 }
 
 function dockerExecSql(containerName, sqlContent) {
-  const r = spawnSync(
+  const r = spawnSafe(
     "docker",
     ["exec", "-i", containerName, "psql", "-U", "root", "-d", "invoices_db"],
     { input: sqlContent, cwd: root, stdio: ["pipe", "inherit", "inherit"] }
@@ -33,7 +29,7 @@ function dockerExecSql(containerName, sqlContent) {
 }
 
 function dockerExecCmd(containerName, psqlArgs) {
-  const r = spawnSync("docker", ["exec", containerName, "psql", "-U", "root", "-d", "invoices_db", ...psqlArgs], { cwd: root, stdio: "inherit" });
+  const r = spawnSafe("docker", ["exec", containerName, "psql", "-U", "root", "-d", "invoices_db", ...psqlArgs], { cwd: root, stdio: "inherit" });
   return r.status === 0;
 }
 
@@ -63,11 +59,10 @@ const sqlContent = fs.readFileSync(sqlPath, "utf8");
 console.log("🔧 Setting up database...");
 console.log("📁 Working directory: " + scriptDir);
 
-// Try docker container by name
 let names = [];
 try {
-  const out = execSync("docker ps --format \"{{.Names}}\"", { cwd: root, encoding: "utf8", shell: isWin });
-  names = out.trim().split(/\r?\n/).filter(Boolean);
+  const out = execShell("docker ps --format \"{{.Names}}\"", { cwd: root, encoding: "utf8" });
+  names = (out && out.toString ? out.toString() : out).trim().split(/\r?\n/).filter(Boolean);
 } catch {}
 
 if (names.includes("invoicedoc-db-dev")) {
@@ -81,40 +76,40 @@ if (names.includes("invoicedoc-db-dev")) {
   }
 }
 
-if (runQuiet(`docker-compose -f "${composePath}" ps -q pgdatabase`)) {
-  const status = execSync(`docker-compose -f "${composePath}" ps pgdatabase`, { cwd: root, encoding: "utf8", shell: isWin });
-  if (status.includes("Up")) {
+const psOut = runComposeQuiet(["ps", "-q", "pgdatabase"], { stdio: ["pipe", "pipe", "pipe"] });
+if (psOut !== null && psOut.trim() !== "") {
+  const statusOut = runComposeQuiet(["ps", "pgdatabase"]);
+  if (statusOut && statusOut.includes("Up")) {
     console.log("✅ Docker container (pgdatabase) is running");
     console.log("📝 Running SQL script via Docker...");
-    const r = spawnSync(
+    const r = spawnSafe(
       "docker-compose",
       ["-f", composePath, "exec", "-T", "pgdatabase", "psql", "-U", "root", "-d", "invoices_db"],
-      { input: sqlContent, cwd: root, stdio: ["pipe", "inherit", "inherit"], shell: isWin }
+      { input: sqlContent, cwd: root, stdio: ["pipe", "inherit", "inherit"] }
     );
     if (r.status === 0) {
       console.log("✅ Tables created successfully!");
       console.log("🔍 Verifying created tables:");
-      run(`docker-compose -f "${composePath}" exec -T pgdatabase psql -U root -d invoices_db -c "\\dt"`);
+      runCompose(["exec", "-T", "pgdatabase", "psql", "-U", "root", "-d", "invoices_db", "-c", "\\dt"]);
       process.exit(0);
     }
   }
 }
 
-// Try psql (localhost:15432 then 5432)
 const env = { ...process.env, PGPASSWORD: "root" };
-let r = spawnSync("psql", ["-h", "localhost", "-p", "15432", "-U", "root", "-d", "invoices_db", "-f", sqlPath], { cwd: scriptDir, stdio: "inherit", env });
+let r = spawnSafe("psql", ["-h", "localhost", "-p", "15432", "-U", "root", "-d", "invoices_db", "-f", sqlPath], { cwd: scriptDir, stdio: "inherit", env });
 if (r.status === 0) {
   console.log("✅ Tables created successfully!");
   console.log("🔍 Verifying created tables:");
-  spawnSync("psql", ["-h", "localhost", "-p", "15432", "-U", "root", "-d", "invoices_db", "-c", "\\dt"], { cwd: scriptDir, stdio: "inherit", env: { ...process.env, PGPASSWORD: "root" } });
+  spawnSafe("psql", ["-h", "localhost", "-p", "15432", "-U", "root", "-d", "invoices_db", "-c", "\\dt"], { cwd: scriptDir, stdio: "inherit", env: { ...process.env, PGPASSWORD: "root" } });
   process.exit(0);
 }
 
-r = spawnSync("psql", ["-d", "invoices_db", "-f", sqlPath], { cwd: scriptDir, stdio: "inherit" });
+r = spawnSafe("psql", ["-d", "invoices_db", "-f", sqlPath], { cwd: scriptDir, stdio: "inherit" });
 if (r.status === 0) {
   console.log("✅ Tables created successfully!");
   console.log("🔍 Verifying created tables:");
-  spawnSync("psql", ["-d", "invoices_db", "-c", "\\dt"], { cwd: scriptDir, stdio: "inherit" });
+  spawnSafe("psql", ["-d", "invoices_db", "-c", "\\dt"], { cwd: scriptDir, stdio: "inherit" });
   process.exit(0);
 }
 

@@ -2,6 +2,7 @@
   "name": "invoicedoc2",
   "version": "2.0.0",
   "description": "InvoiceDoc2 - Invoice Management System",
+  "engines": { "node": ">=20.19.0 <22.0.0 || >=22.12.0" },
   "scripts": {
     "docker:start": "node scripts/docker-start.js",
     "docker:stop": "node scripts/docker-stop.js",

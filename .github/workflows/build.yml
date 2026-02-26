@@ -1,0 +1,35 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['20']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Install and build client
+        run: |
+          cd client
+          npm ci
+          npm run build
+
+      - name: Install server
+        run: |
+          cd server
+          npm ci
+        env:
+          NODE_ENV: production

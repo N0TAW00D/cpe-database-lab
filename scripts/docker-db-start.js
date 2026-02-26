@@ -1,23 +1,24 @@
 #!/usr/bin/env node
 "use strict";
-const { execSync, spawnSync } = require("child_process");
+const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const { spawnSafe, execShell, isWin } = require("./run-safe.js");
 
 const root = path.resolve(__dirname, "..");
-const isWin = process.platform === "win32";
 const composeDb = path.join(root, "database", "compose.yaml");
 const svc = "pgdatabase";
+const adminerSvc = "adminer";
 
-const run = (cmd, opts = {}) => execSync(cmd, { cwd: root, stdio: "inherit", shell: isWin, ...opts });
-const runQuiet = (cmd, opts = {}) => {
-  try {
-    execSync(cmd, { cwd: root, encoding: "utf8", shell: isWin, ...opts });
-    return true;
-  } catch {
-    return false;
-  }
-};
+function runCompose(args, opts = {}) {
+  const r = spawnSafe("docker-compose", ["-f", composeDb, ...args], { cwd: root, stdio: "inherit", ...opts });
+  return r.status === 0;
+}
+
+function runComposeQuiet(args, opts = {}) {
+  const r = spawnSafe("docker-compose", ["-f", composeDb, ...args], { cwd: root, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], ...opts });
+  return r.status === 0;
+}
 
 function portInUse(port) {
   const net = require("net");
@@ -31,7 +32,9 @@ function portInUse(port) {
 
 async function main() {
   console.log("🚀 Starting InvoiceDoc2 Database...");
-  if (!runQuiet("docker info", { stdio: "pipe" })) {
+  try {
+    execShell("docker info", { cwd: root, stdio: "pipe" });
+  } catch {
     console.error("❌ Docker is not running. Please start Docker Desktop first.");
     process.exit(1);
   }
@@ -40,46 +43,49 @@ async function main() {
   if (inUse) {
     let name = "";
     try {
-      name = execSync("docker ps --filter publish=15432 --format \"{{.Names}}\"", { cwd: root, encoding: "utf8", shell: isWin }).trim().split("\n")[0] || "";
+      const out = execShell("docker ps --filter publish=15432 --format \"{{.Names}}\"", { cwd: root, encoding: "utf8" });
+      name = (out && out.toString ? out.toString() : out).trim().split("\n")[0] || "";
     } catch {}
     if (name) {
       console.log("⚠️  Port 15432 in use by " + name + ". Stopping it...");
-      runQuiet("docker stop " + name);
-      if (!isWin) run("sleep 2"); else run("timeout /t 2 /nobreak > nul", { shell: true });
+      execShell("docker stop " + name, { cwd: root });
+      if (isWin) execShell("timeout /t 2 /nobreak > nul", { cwd: root });
+      else execShell("sleep 2", { cwd: root });
     } else {
       console.error("❌ Port 15432 is in use. Free it or change the port in database/compose.yaml");
       process.exit(1);
     }
   }
 
-  console.log("📦 Starting database container...");
-  run(`docker-compose -f "${composeDb}" up -d ${svc}`);
+  console.log("📦 Starting database and Adminer...");
+  runCompose(["up", "-d", svc, adminerSvc]);
   console.log("⏳ Waiting for database...");
-  if (isWin) run("timeout /t 5 /nobreak > nul", { shell: true });
-  else run("sleep 5");
+  if (isWin) execShell("timeout /t 5 /nobreak > nul", { cwd: root });
+  else execShell("sleep 5", { cwd: root });
 
   for (let i = 0; i < 30; i++) {
-    if (runQuiet(`docker-compose -f "${composeDb}" exec -T ${svc} pg_isready -U root`, { stdio: "pipe" })) {
+    if (runComposeQuiet(["exec", "-T", svc, "pg_isready", "-U", "root"])) {
       console.log("✅ Database is ready!");
       break;
     }
     if (i === 29) console.log("⚠️  Database slow to start");
-    else if (isWin) run("timeout /t 1 /nobreak > nul", { shell: true });
-    else run("sleep 1");
+    else if (isWin) execShell("timeout /t 1 /nobreak > nul", { cwd: root });
+    else execShell("sleep 1", { cwd: root });
   }
 
   console.log("\n🔧 Setting up schema...");
   const setupPath = path.join(root, "database", "setup_db.js");
   const setupSh = path.join(root, "database", "setup_db.sh");
   if (fs.existsSync(setupPath)) {
-    const r = spawnSync("node", [setupPath], { cwd: root, stdio: "inherit", shell: isWin });
+    const r = spawnSafe("node", [setupPath], { cwd: root, stdio: "inherit" });
     if (r.status !== 0) console.log("⚠️  Setup had errors (exit " + r.status + ")");
   } else if (fs.existsSync(setupSh) && !isWin) {
-    run("cd database && ./setup_db.sh");
+    execShell("cd database && ./setup_db.sh", { cwd: root });
   } else {
     console.log("⚠️  Run manually: node database/setup_db.js  or  cd database && ./setup_db.sh");
   }
   console.log("\n✅ Database started. Host: localhost:15432 | DB: invoices_db | User: root");
+  console.log("   Adminer (web UI): http://localhost:8080 — Server: pgdatabase | User: root | Password: root | Database: invoices_db");
 }
 
 main().catch((e) => {

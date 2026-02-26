@@ -41,7 +41,7 @@ npm run docker:db:start
 This starts PostgreSQL from `database/compose.yaml` and runs the schema/seed script. When it finishes you should see "Database is ready!".
 
 **DB access:** Host `localhost:15432` | Database `invoices_db` | User `root` | Password `root`  
-**Adminer (web UI):** http://localhost:8080
+**Adminer (web UI):** http://localhost:8080 — System: PostgreSQL | Server: `pgdatabase` | Username: `root` | Password: `root` | Database: `invoices_db`
 
 **Useful DB commands:**
 - `npm run docker:db:stop` — Stop the database
@@ -284,11 +284,30 @@ If you see `relation "invoice" does not exist`:
 - Change port mapping in `docker-compose.yml` for Docker deployment
 - Change port mapping in `database/compose.yaml` for database only
 
+### Adminer not loading or connection failed (http://localhost:8080)
+`npm run docker:db:start` starts both the database and Adminer. If you started the DB earlier and Adminer was not running, start it with:
+```bash
+docker compose -f database/compose.yaml up -d adminer
+```
+Then open http://localhost:8080 and log in with: System **PostgreSQL**, Server **pgdatabase**, Username **root**, Password **root**, Database **invoices_db**.
+
 ### Docker Issues
 - **Port conflict**: Stop existing containers using the same ports
 - **Build errors**: Check Docker Desktop is running and has enough resources
 - **Platform issues**: Docker Compose is configured for `linux/amd64` platform
 - See [README.DOCKER.md](./README.DOCKER.md) for detailed troubleshooting
+
+### Windows: "running scripts is disabled" when running npm (PowerShell)
+If you see an error like:
+`File C:\Program Files\nodejs\npm.ps1 cannot be loaded because running scripts is disabled on this system`
+
+**Option A — Keep using PowerShell:** set the execution policy for the current user (run once, no admin required), then `npm run dev` will work:
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+npm run dev
+```
+
+**Option B — Use Command Prompt instead:** no settings to change. Press **Win + R** → type `cmd` → Enter → `cd` to your project folder (e.g. `InvoiceDoc2\client`) → run `npm run dev` as usual.
 
 ## 📚 Additional Documentation
 
