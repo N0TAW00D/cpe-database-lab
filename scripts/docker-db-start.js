@@ -73,7 +73,7 @@ async function main() {
     else execShell("sleep 1", { cwd: root });
   }
 
-  console.log("\n🔧 Setting up schema...");
+  console.log("\n🔧 Ensuring schema and seed are ready...");
   const setupPath = path.join(root, "database", "setup_db.js");
   const setupSh = path.join(root, "database", "setup_db.sh");
   if (fs.existsSync(setupPath)) {

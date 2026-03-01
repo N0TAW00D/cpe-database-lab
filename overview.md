@@ -53,7 +53,7 @@ What this script does:
 1. Starts `pgdatabase` on `localhost:15432` using `database/compose.yaml`
 2. Waits for readiness (`pg_isready`)
 3. Runs `node database/setup_db.js`
-4. `setup_db.js` applies `database/sql/sql_run.sql` (schema + seed data)
+4. `setup_db.js` applies `database/sql/001_schema.sql` and only runs `database/sql/003_seed.sql` when the database is empty
 
 ### Step 3. (Optional) Start Adminer
 
@@ -423,7 +423,7 @@ LIMIT 10 OFFSET 0;
 ## 7) Teaching notes and caveats
 
 1. Invoice API supports both numeric `id` and `invoice_no` in detail/update/delete service methods (backward compatibility).
-2. `database/sql/sql_run.sql` starts with `drop table if exists ...`, so rerunning setup can reset local DB changes.
+2. `database/sql/sql_run.sql` is now a reset script, while normal setup uses `001_schema.sql` plus conditional seed to avoid wiping local DB changes.
 3. `DataList` debounces search by 300ms before sending requests.
 4. This repo is SQL-script managed (no Prisma/Knex/TypeORM migration history).
 

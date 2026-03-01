@@ -38,7 +38,7 @@ Recommended: run the database in Docker, then run server and client in the termi
 npm run docker:db:start
 ```
 
-This starts PostgreSQL from `database/compose.yaml` and runs the schema/seed script. When it finishes you should see "Database is ready!".
+This starts PostgreSQL from `database/compose.yaml`, applies schema updates, and seeds sample data only when the database is empty. When it finishes you should see "Database is ready!".
 
 **DB access:** Host `localhost:15432` | Database `invoices_db` | User `root` | Password `root`  
 **Adminer (web UI):** http://localhost:8080 — System: PostgreSQL | Server: `pgdatabase` | Username: `root` | Password: `root` | Database: `invoices_db`
@@ -128,11 +128,11 @@ InvoiceDoc2/
 │   ├── Dockerfile
 │   └── package.json
 ├── database/                    # PostgreSQL setup
-│   ├── init/                    # 01_schema.sql (run on first start)
-│   ├── sql/                     # sql_run.sql (schema + seed), 002_import_csv.sql
+│   ├── init/                    # 01_schema.sql (schema only, run on first start)
+│   ├── sql/                     # 001_schema.sql, 003_seed.sql, sql_run.sql (full reset), 002_import_csv.sql
 │   ├── data/                    # CSV test data
 │   ├── compose.yaml             # Database-only Docker Compose
-│   ├── setup_db.sh              # Run schema/seed against running DB
+│   ├── setup_db.sh              # Run schema, then seed only if DB is empty
 │   └── generate_sql_run.py      # Generate sql_run.sql from CSV
 ├── docker-compose.yml           # Full stack (database + server + client)
 ├── docker-compose.coolify.yml   # Server + client only (DB via env)
@@ -227,7 +227,7 @@ InvoiceDoc2/
 **Local dev (run DB first, then server/client in terminal):**
 | Command | Description |
 |---------|-------------|
-| `npm run docker:db:start` | Start database only + run schema/seed *(run this first)* |
+| `npm run docker:db:start` | Start database only + apply schema, then seed if empty *(run this first)* |
 | `npm run docker:db:stop` | Stop database |
 | `npm run docker:db:check` | Check DB status and table row counts |
 | `npm run docker:db:logs` | View database container logs |
@@ -276,7 +276,9 @@ Scripts live in `scripts/`. DB commands use `database/compose.yaml`.
 If you see `relation "invoice" does not exist`:
 1. Start DB and apply schema: `npm run docker:db:start`
 2. Or manually: `cd database && docker-compose up -d && ./setup_db.sh`
-3. Or run SQL directly: `cd database && PGPASSWORD=root psql -h localhost -p 15432 -U root -d invoices_db -f sql/sql_run.sql`
+3. Or run schema directly: `cd database && PGPASSWORD=root psql -h localhost -p 15432 -U root -d invoices_db -f sql/001_schema.sql`
+4. If the DB is empty, run seed directly: `cd database && PGPASSWORD=root psql -h localhost -p 15432 -U root -d invoices_db -f sql/003_seed.sql`
+5. To reset from scratch: `cd database && PGPASSWORD=root psql -h localhost -p 15432 -U root -d invoices_db -f sql/sql_run.sql`
 
 ### Port Already in Use
 - Change `PORT` in `server/.env` for backend
