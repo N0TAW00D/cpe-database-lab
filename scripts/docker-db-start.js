@@ -75,14 +75,11 @@ async function main() {
 
   console.log("\n🔧 Ensuring schema and seed are ready...");
   const setupPath = path.join(root, "database", "setup_db.js");
-  const setupSh = path.join(root, "database", "setup_db.sh");
   if (fs.existsSync(setupPath)) {
     const r = spawnSafe("node", [setupPath], { cwd: root, stdio: "inherit" });
     if (r.status !== 0) console.log("⚠️  Setup had errors (exit " + r.status + ")");
-  } else if (fs.existsSync(setupSh) && !isWin) {
-    execShell("cd database && ./setup_db.sh", { cwd: root });
   } else {
-    console.log("⚠️  Run manually: node database/setup_db.js  or  cd database && ./setup_db.sh");
+    console.log("⚠️  Run manually: node database/setup_db.js");
   }
   console.log("\n✅ Database started. Host: localhost:15432 | DB: invoices_db | User: root");
   console.log("   Adminer (web UI): http://localhost:8080 — Server: pgdatabase | User: root | Password: root | Database: invoices_db");

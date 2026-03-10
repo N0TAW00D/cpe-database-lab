@@ -46,10 +46,9 @@ Backend (Express 4, Node 20).
 PostgreSQL schema and seed data.
 
 - **`init/`** – `01_schema.sql` (schema only, run on first container start).
-- **`sql/`** – `001_schema.sql`, `003_seed.sql`, `sql_run.sql` (full reset), `002_import_csv.sql`.
-- **`data/`** – CSV test data.
+- **`sql/`** – `001_schema.sql`, `003_seed.sql`, `sql_run.sql` (full reset).
 - **`compose.yaml`** – Database-only Docker Compose.
-- **`setup_db.sh`**, **`generate_sql_run.py`** – Run schema + conditional seed, or generate reset SQL from CSV.
+- **`setup_db.js`** – Run schema + conditional seed (or full reset via `sql_run.sql`).
 
 ### Root
 - **`docker-compose.yml`** – Full stack (database + server + client).

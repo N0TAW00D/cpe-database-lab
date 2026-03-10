@@ -1,9 +1,0 @@
-﻿id,created_at,code,name,address_line1,address_line2,country_id,credit_limit
-3,2026-01-26 09:28:00+00:00,C102,"Siam Trading Co., Ltd.",660 Rama IX Rd,Nonthaburi,5,1000000
-4,2026-01-26 09:29:00+00:00,C103,"Chao Phraya Trading Co., Ltd.",260 Phetchaburi Rd,Nonthaburi,5,500000
-5,2026-01-26 09:30:00+00:00,C104,"Bangkok Trading Co., Ltd.",286 Charan Sanitwong Rd,-,3,100000
-6,2026-01-26 09:31:00+00:00,C105,"Ayutthaya Trading Co., Ltd.",342 Ratchadaphisek Rd,Bangkok,5,100000
-7,2026-01-26 09:32:00+00:00,C106,"Rama Trading Co., Ltd.",834 Phahonyothin Rd,Pathum Thani,1,500000
-8,2026-01-26 09:33:00+00:00,C107,"Thonburi Trading Co., Ltd.",77 Lat Phrao Rd,Nonthaburi,3,1000000
-9,2026-01-26 09:34:00+00:00,C108,"Krungthep Trading Co., Ltd.",332 Bang Na-Trat Rd,Nonthaburi,5,500000
-10,2026-01-26 09:35:00+00:00,C109,"Mekong Trading Co., Ltd.",915 Vibhavadi Rangsit Rd,Samut Prakan,3,100000

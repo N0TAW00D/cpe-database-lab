@@ -4,19 +4,9 @@
   "description": "InvoiceDoc2 - Invoice Management System",
   "engines": { "node": ">=20.19.0 <22.0.0 || >=22.12.0" },
   "scripts": {
-    "docker:start": "node scripts/docker-start.js",
-    "docker:stop": "node scripts/docker-stop.js",
-    "docker:logs": "node scripts/docker-logs.js",
-    "docker:up": "docker compose up -d --build",
-    "docker:down": "docker compose down",
-    "docker:ps": "docker compose ps",
-    "docker:restart": "docker compose restart",
     "docker:db:start": "node scripts/docker-db-start.js",
     "docker:db:stop": "node scripts/docker-db-stop.js",
     "docker:db:check": "node scripts/docker-db-check.js",
-    "docker:db:logs": "docker compose -f database/compose.yaml logs -f",
-    "docker:db:ps": "docker compose -f database/compose.yaml ps",
-    "db:setup": "node database/setup_db.js",
     "db:reset": "node database/setup_db.js --reset",
     "sync": "node scripts/check-and-pull.js"
   }

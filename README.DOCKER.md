@@ -9,55 +9,20 @@ Docker usage guide for InvoiceDoc2
 
 ## Quick Start
 
-### Method 1: Using Shell Scripts (Recommended)
-
-```bash
-# Start services
-./docker-start.sh
-
-# Stop services
-./docker-stop.sh
-
-# View logs
-./docker-logs.sh          # All services
-./docker-logs.sh server    # Server only
-./docker-logs.sh client    # Client only
-./docker-logs.sh database  # Database only
-```
-
-### Method 2: Using npm scripts
-
-```bash
-# Start services
-npm run docker:start
-
-# Stop services
-npm run docker:stop
-
-# View logs
-npm run docker:logs
-
-# Check status
-npm run docker:ps
-
-# Restart services
-npm run docker:restart
-```
-
-### Method 3: Using docker-compose directly
+### Run with Docker Compose directly
 
 ```bash
 # Build and run all services
-docker-compose up -d --build
+docker compose up -d --build
 
 # Check status
-docker-compose ps
+docker compose ps
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop services
-docker-compose down
+docker compose down
 ```
 
 ## Services
