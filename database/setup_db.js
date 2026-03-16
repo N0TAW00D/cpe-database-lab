@@ -8,7 +8,7 @@ const scriptDir = path.resolve(__dirname);
 const root = path.join(scriptDir, "..");
 const schemaPath = path.join(scriptDir, "sql", "001_schema.sql");
 const seedPath = path.join(scriptDir, "sql", "003_seed.sql");
-const resetPath = path.join(scriptDir, "sql", "sql_run.sql");
+const resetPath = path.join(scriptDir, "sql", "sql_reset.sql");
 const composePath = path.join(scriptDir, "compose.yaml");
 const shouldReset = process.argv.includes("--reset");
 
