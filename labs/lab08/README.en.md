@@ -66,8 +66,19 @@ SELECT setval(pg_get_serial_sequence('____________', 'id'), coalesce(max(id), 0)
 
 ### Run and verify
 
+**macOS / Linux:**
 ```bash
-docker exec -i pgdatabase psql -U root -d invoices_db < database/sql/002_lab8_sales_person.sql
+cat database/sql/002_lab8_sales_person.sql | docker exec -i pgdatabase psql -U root -d invoices_db
+```
+
+**Windows (PowerShell):**
+```powershell
+Get-Content database\sql\002_lab8_sales_person.sql | docker exec -i pgdatabase psql -U root -d invoices_db
+```
+
+**Windows (CMD):**
+```cmd
+type database\sql\002_lab8_sales_person.sql | docker exec -i pgdatabase psql -U root -d invoices_db
 ```
 
 > **If you see `No such container: pgdatabase`**, your old container still has the old name. Restart it:
