@@ -139,7 +139,7 @@ export async function ____________({ search, page, limit }) {
     [searchParam, Number(limit), offset],
   );
 
-  return { data: rows, total: Number(countResult.rows[0].total), page: Number(page), limit: Number(limit), totalPages: Math.ceil(...) };
+  return { data: rows, total: Number(countResult.rows[0].total), page: Number(page), limit: Number(limit), totalPages: Math.ceil(Number(countResult.rows[0].total) / Number(limit)) };
 }
 ```
 
@@ -156,7 +156,16 @@ export async function handleList(req, res) {
   try {
     const { search = "", page = 1, limit = 10 } = req.query;
     const result = await ____________({ search, page, limit });
-    res.json({ success: true, data: result.data, meta: { ... } });
+    res.json({
+      success: true,
+      data: result.data,
+      meta: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+      },
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: { message: err.message } });
   }
