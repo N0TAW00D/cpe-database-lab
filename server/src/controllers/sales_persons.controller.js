@@ -27,3 +27,14 @@ export async function get(req, res) {
     return sendError(res, err.message);
   }
 }
+
+export async function remove(req, res) {
+  try {
+    const { code } = req.params;
+    const deleted = await salesPersonService.deleteSalesPersonByCode(code);
+    if (!deleted) return sendError(res, "Sales Person not found", 404);
+    return sendData(res, { message: "Sales Person deleted" });
+  } catch (err) {
+    return sendError(res, err.message);
+  }
+}

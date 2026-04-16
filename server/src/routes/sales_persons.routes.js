@@ -5,5 +5,6 @@ const router = Router();
 
 router.get("/", salesPersonController.list);
 router.get("/:code", salesPersonController.get);
+router.delete("/:code", salesPersonController.remove);
 
 export default router;

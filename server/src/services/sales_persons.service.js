@@ -38,3 +38,8 @@ export async function getSalesPersonByCode(code) {
   const { rows } = await pool.query("SELECT * FROM sales_person WHERE code = $1", [code]);
   return rows[0] || null;
 }
+
+export async function deleteSalesPersonByCode(code) {
+  const { rowCount } = await pool.query("DELETE FROM sales_person WHERE code = $1", [code]);
+  return rowCount > 0;
+}

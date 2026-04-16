@@ -15,3 +15,8 @@ export async function getSalesPerson(code) {
   const res = unwrap(await http(`/api/sales-persons/${encodeURIComponent(code)}`));
   return res.data;
 }
+
+export async function deleteSalesPerson(code) {
+  const res = unwrap(await http(`/api/sales-persons/${encodeURIComponent(code)}`, { method: "DELETE" }));
+  return res.data;
+}
