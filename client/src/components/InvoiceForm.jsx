@@ -3,21 +3,27 @@
 import React from "react";
 import LineItemsEditor from "./LineItemsEditor.jsx";
 import CustomerPickerModal from "./CustomerPickerModal.jsx";
+import SalesPersonPickerModal from "./SalesPersonPickerModal.jsx";
 import { AlertModal } from "./Modal.jsx";
 import { getCustomer } from "../api/customers.api.js";
+import { getSalesPerson } from "../api/sales_persons.api.js";
 import { formatBaht } from "../utils.js";
 
 export default function InvoiceForm({ onSubmit, submitting, initialData }) {
   // Local state for header fields and line items
   const [invoiceNo, setInvoiceNo] = React.useState("");
   const [customerCode, setCustomerCode] = React.useState("");
+  const [salesPersonCode, setSalesPersonCode] = React.useState("");
   const [invoiceDate, setInvoiceDate] = React.useState(new Date().toISOString().slice(0, 10));
   const [vatRate, setVatRate] = React.useState(0.07);
   const [items, setItems] = React.useState([{ product_code: "", quantity: 1, unit_price: 0 }]);
   const [alertModal, setAlertModal] = React.useState({ isOpen: false, title: "Validation Error", message: "" });
   const [customerModalOpen, setCustomerModalOpen] = React.useState(false);
+  const [salesPersonModalOpen, setSalesPersonModalOpen] = React.useState(false);
   const [customerDetails, setCustomerDetails] = React.useState(null); // name + address (readonly)
+  const [salesPersonDetails, setSalesPersonDetails] = React.useState(null); // name (readonly)
   const [customerLoadError, setCustomerLoadError] = React.useState("");
+  const [salesPersonLoadError, setSalesPersonLoadError] = React.useState("");
 
   // When customer code is set (from LoV or initialData), fetch name and address
   React.useEffect(() => {
@@ -42,6 +48,29 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
     return () => { cancelled = true; };
   }, [customerCode]);
 
+  // When sales person code is set, fetch name
+  React.useEffect(() => {
+    const code = String(salesPersonCode || "").trim();
+    if (!code) {
+      setSalesPersonDetails(null);
+      setSalesPersonLoadError("");
+      return;
+    }
+    setSalesPersonLoadError("");
+    let cancelled = false;
+    getSalesPerson(code)
+      .then((data) => {
+        if (!cancelled) setSalesPersonDetails(data);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSalesPersonDetails(null);
+          setSalesPersonLoadError("Sales Person not found");
+        }
+      });
+    return () => { cancelled = true; };
+  }, [salesPersonCode]);
+
   // Load customer by code on blur (user typed code)
   const handleCustomerCodeBlur = () => {
     const code = String(customerCode || "").trim();
@@ -59,10 +88,28 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
       });
   };
 
+  // Load sales person by code on blur
+  const handleSalesPersonCodeBlur = () => {
+    const code = String(salesPersonCode || "").trim();
+    if (!code) {
+      setSalesPersonDetails(null);
+      setSalesPersonLoadError("");
+      return;
+    }
+    setSalesPersonLoadError("");
+    getSalesPerson(code)
+      .then((data) => setSalesPersonDetails(data))
+      .catch(() => {
+        setSalesPersonDetails(null);
+        setSalesPersonLoadError("Sales Person not found");
+      });
+  };
+
   React.useEffect(() => {
     if (initialData) {
       setInvoiceNo(initialData.invoice_no);
       setCustomerCode(initialData.customer_code || "");
+      setSalesPersonCode(initialData.sales_person_code || "");
       const d = initialData.invoice_date ? new Date(initialData.invoice_date).toISOString().slice(0, 10) : "";
       setInvoiceDate(d);
       setVatRate(Number(initialData.vat_rate || 0.07));
@@ -97,6 +144,12 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
     if (!invoiceDate || String(invoiceDate).trim() === "") errs.push("Date should not be null");
     if (!String(customerCode || "").trim()) errs.push("Customer Code should not be null");
     else if (!customerDetails) errs.push("Customer must be selected from list (enter code and blur, or use LoV)");
+    
+    // Sales Person is optional as per schema, but if entered, should be valid.
+    if (String(salesPersonCode || "").trim() && !salesPersonDetails) {
+      errs.push("Sales Person must be selected from list if provided (enter code and blur, or use LoV)");
+    }
+
     if (!initialData && !autoCode && !String(invoiceNo || "").trim()) errs.push("Invoice No should not be null");
     items.forEach((it, i) => {
       const row = i + 1;
@@ -134,6 +187,7 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
     const payload = {
       invoice_no: initialData ? invoiceNo.trim() : (autoCode ? "" : invoiceNo.trim()),
       customer_code: String(customerCode).trim(),
+      sales_person_code: String(salesPersonCode || "").trim() || undefined,
       invoice_date: invoiceDate,
       vat_rate: Number(vatRate),
       line_items: items.map((x) => {
@@ -240,6 +294,56 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
               <input className="form-control" disabled value={customerAddressDisplay} readOnly placeholder="—" />
             </div>
 
+            {/* Sales Person: 2 fields – code (editable + LoV) and name (readonly) */}
+            <div className="form-group">
+              <label className="form-label">Sales Person Code</label>
+              <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                <input
+                  className="form-control"
+                  value={salesPersonCode}
+                  onChange={(e) => setSalesPersonCode(e.target.value)}
+                  onBlur={handleSalesPersonCodeBlur}
+                  placeholder="e.g. SP001"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setSalesPersonModalOpen(true)}
+                  title="List of Values"
+                >
+                  LoV
+                </button>
+                {salesPersonCode && (
+                  <button
+                    type="button"
+                    onClick={() => { setSalesPersonCode(""); setSalesPersonDetails(null); setSalesPersonLoadError(""); }}
+                    title="Clear"
+                    style={{
+                      padding: "0 12px",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-sm)",
+                      background: "var(--bg-body)",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      fontSize: "1.2rem",
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              {salesPersonLoadError && (
+                <span style={{ fontSize: "0.8rem", color: "#ef4444", marginTop: 4, display: "block" }}>{salesPersonLoadError}</span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Sales Person Name</label>
+              <input className="form-control" disabled value={salesPersonDetails?.name ?? ""} readOnly placeholder="—" />
+            </div>
+
             <CustomerPickerModal
               isOpen={customerModalOpen}
               onClose={() => setCustomerModalOpen(false)}
@@ -247,6 +351,16 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
               onSelect={(code) => {
                 setCustomerCode(String(code));
                 setCustomerModalOpen(false);
+              }}
+            />
+
+            <SalesPersonPickerModal
+              isOpen={salesPersonModalOpen}
+              onClose={() => setSalesPersonModalOpen(false)}
+              initialSearch={salesPersonCode}
+              onSelect={(code) => {
+                setSalesPersonCode(String(code));
+                setSalesPersonModalOpen(false);
               }}
             />
 

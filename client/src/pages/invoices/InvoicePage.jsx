@@ -50,6 +50,7 @@ export default function InvoicePage({ mode: propMode }) {
                         invoice_no: h.invoice_no,
                         customer_code: h.customer_code,
                         customer_label: `${h.customer_code || ''} - ${h.customer_name}`.replace(/^ - /, ''),
+                        sales_person_code: h.sales_person_code,
                         invoice_date: h.invoice_date,
                         vat_rate: rate,
                         line_items: inv.line_items.map(li => ({
@@ -123,6 +124,8 @@ export default function InvoicePage({ mode: propMode }) {
                     <div className="flex justify-between mb-4">
                         <div>
                             <div className="brand mb-4">InvoiceDoc v2</div>
+                            <div className="font-bold">Sales Person</div>
+                            <div>{h.sales_person_code} {h.sales_person_name}</div>
                             <div className="font-bold">Customer</div>
                             <div>{h.customer_name}</div>
                             <div className="text-muted">{h.address_line1 || "-"}</div>
