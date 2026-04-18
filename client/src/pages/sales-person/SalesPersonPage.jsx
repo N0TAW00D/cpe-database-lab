@@ -1,31 +1,26 @@
-// Customer page (View, Create & Edit)
-// Uses react-hook-form + zod for form state and validation
+// Sales Person page (View, Create & Edit)
 import React from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-toastify";
-import { listCountries, getCustomer, createCustomer, updateCustomer } from "../../api/customers.api.js";
-import { formatBaht } from "../../utils.js";
+import { getSalesPerson, createSalesPerson, updateSalesPerson } from "../../api/sales_persons.api.js";
+import { formatDate } from "../../utils.js";
 import Loading from "../../components/Loading.jsx";
 import { AlertModal } from "../../components/Modal.jsx";
-import { customerFormSchema } from "../../schemas/customer.schema.js";
+import { salesPersonFormSchema } from "../../schemas/sales_person.schema.js";
 
 const defaultValues = {
   code: "",
   name: "",
-  address_line1: "",
-  address_line2: "",
-  country_id: "",
-  credit_limit: "",
+  start_work_date: "",
 };
 
 export default function SalesPersonPage({ mode: propMode }) {
-  const { id } = useParams();
+  const { id } = useParams(); // id is the 'code' in this case
   const mode = propMode || (id ? "view" : "create");
   const nav = useNavigate();
 
-  const [countries, setCountries] = React.useState([]);
   const [err, setErr] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [loading, setLoading] = React.useState(mode !== "create");
@@ -41,31 +36,23 @@ export default function SalesPersonPage({ mode: propMode }) {
     reset,
   } = useForm({
     defaultValues,
-    resolver: zodResolver(customerFormSchema),
+    resolver: zodResolver(salesPersonFormSchema),
   });
 
   const form = watch();
 
   React.useEffect(() => {
-    if (mode === "create") {
-      listCountries()
-        .then((r) => setCountries(r?.data ?? r ?? []))
-        .catch((e) => setErr(String(e.message || e)));
-    } else {
-      Promise.all([listCountries(), getCustomer(id)])
-        .then(([countriesRes, customer]) => {
-          setCountries(countriesRes?.data ?? countriesRes ?? []);
-          if (customer) {
+    if (mode !== "create") {
+      getSalesPerson(id)
+        .then((sp) => {
+          if (sp) {
             reset({
-              code: customer.code || "",
-              name: customer.name || "",
-              address_line1: customer.address_line1 || "",
-              address_line2: customer.address_line2 || "",
-              country_id: customer.country_id != null ? String(customer.country_id) : "",
-              credit_limit: customer.credit_limit !== "" && customer.credit_limit != null ? String(customer.credit_limit) : "",
+              code: sp.code || "",
+              name: sp.name || "",
+              start_work_date: sp.start_work_date ? sp.start_work_date.split('T')[0] : "",
             });
           } else {
-            setErr("Customer not found");
+            setErr("Sales Person not found");
           }
           setLoading(false);
         })
@@ -101,33 +88,22 @@ export default function SalesPersonPage({ mode: propMode }) {
       });
       return;
     }
-    if (mode !== "create" && !String(data.code || "").trim()) {
-      setError("code", { message: "Code should not be null" });
-      setAlertModal({
-        isOpen: true,
-        title: "Save Failed.",
-        message: <ul style={{ margin: 0, paddingLeft: 20 }}><li>Code should not be null</li></ul>,
-      });
-      return;
-    }
 
     setErr("");
     setSubmitting(true);
     try {
       const payload = { ...data };
       if (mode === "create" && autoCode) payload.code = "";
-      if (payload.credit_limit === "" || payload.credit_limit == null) payload.credit_limit = null;
-      else payload.credit_limit = Number(payload.credit_limit);
-      if (payload.country_id !== "" && payload.country_id != null) payload.country_id = Number(payload.country_id);
+      if (!payload.start_work_date) payload.start_work_date = null;
 
       if (mode === "create") {
-        await createCustomer(payload);
-        toast.success("Customer created.");
+        await createSalesPerson(payload);
+        toast.success("Sales Person created.");
       } else {
-        await updateCustomer(id, payload);
-        toast.success("Customer updated.");
+        await updateSalesPerson(id, payload);
+        toast.success("Sales Person updated.");
       }
-      nav("/customers");
+      nav("/sales-person");
     } catch (e) {
       const msg = String(e.message || e);
       setErr(msg);
@@ -141,9 +117,8 @@ export default function SalesPersonPage({ mode: propMode }) {
 
   const isView = mode === "view";
   const isCreate = mode === "create";
-  const titles = { create: "Create Customer", view: "Customer Details", edit: "Edit Customer" };
+  const titles = { create: "Create Sales Person", view: "Sales Person Details", edit: "Edit Sales Person" };
   const title = titles[mode];
-  const country = countries.find((c) => String(c.id) === String(form.country_id));
 
   if (isView) {
     return (
@@ -151,8 +126,8 @@ export default function SalesPersonPage({ mode: propMode }) {
         <div className="page-header">
           <h3 className="page-title">{title}</h3>
           <div className="flex gap-4">
-            <Link to="/customers" className="btn btn-outline">← Back</Link>
-            <Link to={`/customers/${id}/edit`} className="btn btn-primary">Edit</Link>
+            <Link to="/sales-person" className="btn btn-outline">← Back</Link>
+            <Link to={`/sales-person/${id}/edit`} className="btn btn-primary">Edit</Link>
           </div>
         </div>
         <div className="card">
@@ -167,26 +142,12 @@ export default function SalesPersonPage({ mode: propMode }) {
                 <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>Name</div>
                 <div style={{ fontWeight: 600, fontSize: "1.1rem" }}>{form.name}</div>
               </div>
-              <div style={{ marginBottom: "1rem" }}>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>Credit Limit</div>
-                <div style={{ fontWeight: 600, fontSize: "1.1rem", color: "var(--primary)" }}>
-                  {form.credit_limit ? formatBaht(form.credit_limit) : "-"}
-                </div>
-              </div>
             </div>
             <div>
-              <h4 style={{ marginBottom: "1.5rem", color: "var(--primary)" }}>Address</h4>
+              <h4 style={{ marginBottom: "1.5rem", color: "var(--primary)" }}>Employment Info</h4>
               <div style={{ marginBottom: "1rem" }}>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>Address Line 1</div>
-                <div>{form.address_line1 || "-"}</div>
-              </div>
-              <div style={{ marginBottom: "1rem" }}>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>Address Line 2</div>
-                <div>{form.address_line2 || "-"}</div>
-              </div>
-              <div style={{ marginBottom: "1rem" }}>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>Country</div>
-                <div>{country ? country.name : "-"}</div>
+                <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>Start Work Date</div>
+                <div style={{ fontWeight: 600, fontSize: "1.1rem" }}>{formatDate(form.start_work_date)}</div>
               </div>
             </div>
           </div>
@@ -195,14 +156,14 @@ export default function SalesPersonPage({ mode: propMode }) {
     );
   }
 
-  const submitText = isCreate ? "Create Customer" : "Update Customer";
+  const submitText = isCreate ? "Create Sales Person" : "Update Sales Person";
   const submittingText = isCreate ? "Creating..." : "Updating...";
 
   return (
     <div>
       <div className="page-header">
         <h3 className="page-title">{title}</h3>
-        <Link to="/customers" className="btn btn-outline">
+        <Link to="/sales-person" className="btn btn-outline">
           <svg style={{ marginRight: 8 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
           Back
         </Link>
@@ -227,51 +188,30 @@ export default function SalesPersonPage({ mode: propMode }) {
                   <input
                     className="form-control"
                     disabled={autoCode}
-                    placeholder="C001"
+                    placeholder="SP001"
                     {...register("code")}
                   />
                   <div className="form-inline-option">
-                    <input type="checkbox" checked={autoCode} onChange={(e) => setAutoCode(e.target.checked)} id="c_auto" />
-                    <label htmlFor="c_auto">Auto</label>
+                    <input type="checkbox" checked={autoCode} onChange={(e) => setAutoCode(e.target.checked)} id="sp_auto" />
+                    <label htmlFor="sp_auto">Auto</label>
                   </div>
                 </div>
               ) : (
-                <input className="form-control" placeholder="C001" {...register("code")} />
+                <input className="form-control" placeholder="SP001" readOnly {...register("code")} />
               )}
               {errors.code && <span className="form-error">{errors.code.message}</span>}
             </div>
             <div className="form-group">
               <label className="form-label">Name <span className="required-marker">*</span></label>
-              <input className="form-control" placeholder="Customer Name" {...register("name")} />
+              <input className="form-control" placeholder="Sales Person Name" {...register("name")} />
               {errors.name && <span className="form-error">{errors.name.message}</span>}
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
-            <div className="form-group">
-              <label className="form-label">Address Line 1</label>
-              <input className="form-control" placeholder="Address Line 1" {...register("address_line1")} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Address Line 2</label>
-              <input className="form-control" placeholder="Address Line 2" {...register("address_line2")} />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
             <div className="form-group">
-              <label className="form-label">Country <span className="required-marker">*</span></label>
-              <select className="form-control" {...register("country_id")}>
-                <option value="">Select Country</option>
-                {countries.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              {errors.country_id && <span className="form-error">{errors.country_id.message}</span>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">Credit Limit</label>
-              <input type="number" step="0.01" className="form-control" placeholder="0.00" {...register("credit_limit")} />
+              <label className="form-label">Start Work Date</label>
+              <input type="date" className="form-control" {...register("start_work_date")} />
             </div>
           </div>
 

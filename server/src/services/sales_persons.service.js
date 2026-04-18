@@ -35,7 +35,32 @@ export async function listSalesPersons({
 }
 
 export async function getSalesPersonByCode(code) {
-  const { rows } = await pool.query("SELECT * FROM sales_person WHERE code = $1", [code]);
+  if (!code || String(code).trim() === "") return null;
+  const { rows } = await pool.query("SELECT * FROM sales_person WHERE code = $1", [String(code).trim()]);
+  return rows[0] || null;
+}
+
+export async function createSalesPerson({ code, name, start_work_date } = {}) {
+  let resolvedCode = code;
+
+  if (!resolvedCode || String(resolvedCode).trim() === "") {
+    const maxRes = await pool.query("SELECT MAX(id) as m FROM sales_person");
+    const nextId = (maxRes.rows[0].m || 0) + 1;
+    resolvedCode = `SP${nextId.toString().padStart(3, "0")}`;
+  }
+
+  const { rows } = await pool.query(
+    "INSERT INTO sales_person (code, name, start_work_date) VALUES ($1, $2, $3) RETURNING *",
+    [resolvedCode, name, start_work_date || null]
+  );
+  return rows[0];
+}
+
+export async function updateSalesPersonByCode(code, { name, start_work_date } = {}) {
+  const { rows } = await pool.query(
+    "UPDATE sales_person SET name = $1, start_work_date = $2 WHERE code = $3 RETURNING *",
+    [name, start_work_date || null, code]
+  );
   return rows[0] || null;
 }
 
