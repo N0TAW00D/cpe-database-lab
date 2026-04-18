@@ -73,6 +73,8 @@ export async function getSalesByProductSummary({
     `
       SELECT p.code as product_code, p.name as product_name,
              SUM(li.quantity) as quantity_sold,
+             SUM(li.extended_price) as total_price,
+             SUM(li.line_discount_amount) as total_discount,
              SUM(li.line_net_price) as value_sold
       FROM invoice_line_item li
       JOIN product p ON p.id = li.product_id
