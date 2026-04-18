@@ -7,6 +7,7 @@ import SalesPersonPickerModal from "./SalesPersonPickerModal.jsx";
 import { AlertModal } from "./Modal.jsx";
 import { getCustomer } from "../api/customers.api.js";
 import { getSalesPerson } from "../api/sales_persons.api.js";
+import { getVatRate } from "../api/invoices.api.js";
 import { formatBaht } from "../utils.js";
 
 export default function InvoiceForm({ onSubmit, submitting, initialData }) {
@@ -16,7 +17,7 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
   const [salesPersonCode, setSalesPersonCode] = React.useState("");
   const [invoiceDate, setInvoiceDate] = React.useState(new Date().toISOString().slice(0, 10));
   const [vatRate, setVatRate] = React.useState(0.07);
-  const [items, setItems] = React.useState([{ product_code: "", quantity: 1, unit_price: 0 }]);
+  const [items, setItems] = React.useState([{ product_code: "", quantity: 1, unit_price: 0, line_discount_percent: 0 }]);
   const [alertModal, setAlertModal] = React.useState({ isOpen: false, title: "Validation Error", message: "" });
   const [customerModalOpen, setCustomerModalOpen] = React.useState(false);
   const [salesPersonModalOpen, setSalesPersonModalOpen] = React.useState(false);
@@ -24,6 +25,13 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
   const [salesPersonDetails, setSalesPersonDetails] = React.useState(null); // name (readonly)
   const [customerLoadError, setCustomerLoadError] = React.useState("");
   const [salesPersonLoadError, setSalesPersonLoadError] = React.useState("");
+
+  // Fetch default VAT on mount if in create mode
+  React.useEffect(() => {
+    if (!initialData) {
+      getVatRate().then(rate => setVatRate(rate)).catch(() => {});
+    }
+  }, [initialData]);
 
   // When customer code is set (from LoV or initialData), fetch name and address
   React.useEffect(() => {
@@ -114,20 +122,27 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
       setInvoiceDate(d);
       setVatRate(Number(initialData.vat_rate || 0.07));
       const mappedItems = (initialData.line_items || []).map(li => ({
-        line_item_id: li.line_item_id,
+        line_item_id: li.id,
         product_code: li.product_code || "",
         product_label: li.product_label || `${li.product_code || ""} - ${li.product_name || ""}`.replace(/^ - /, ""),
         units_code: li.units_code || "",
         quantity: li.quantity,
-        unit_price: Number(li.unit_price)
+        unit_price: Number(li.unit_price),
+        line_discount_percent: Number(li.line_discount_percent || 0)
       }));
-      setItems(mappedItems.length > 0 ? mappedItems : [{ product_code: "", quantity: 1, unit_price: 0 }]);
+      setItems(mappedItems.length > 0 ? mappedItems : [{ product_code: "", quantity: 1, unit_price: 0, line_discount_percent: 0 }]);
     }
   }, [initialData]);
 
-  const subtotal = items.reduce((s, it) => s + Number(it.quantity || 0) * Number(it.unit_price || 0), 0);
-  const vat = subtotal * Number(vatRate || 0);
-  const amountDue = subtotal + vat;
+  const totalPrice = items.reduce((s, it) => s + Number(it.quantity || 0) * Number(it.unit_price || 0), 0);
+  const totalDiscount = items.reduce((s, it) => {
+    const extended = Number(it.quantity || 0) * Number(it.unit_price || 0);
+    const disc = (Number(it.line_discount_percent || 0) / 100) * extended;
+    return s + disc;
+  }, 0);
+  const netPrice = totalPrice - totalDiscount;
+  const vatAmount = netPrice * Number(vatRate || 0);
+  const amountDue = netPrice + vatAmount;
 
   const [autoCode, setAutoCode] = React.useState(true);
 
@@ -195,6 +210,7 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
           product_code: String(x.product_code || "").trim(),
           quantity: Number(x.quantity),
           unit_price: x.unit_price === "" || x.unit_price === null ? undefined : Number(x.unit_price),
+          line_discount_percent: Number(x.line_discount_percent || 0),
         };
         if (x.line_item_id != null && Number(x.line_item_id) > 0) out.id = Number(x.line_item_id);
         return out;
@@ -399,15 +415,23 @@ export default function InvoiceForm({ onSubmit, submitting, initialData }) {
           <h4>Summary</h4>
           <div style={{ display: "grid", gap: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem", color: "var(--text-muted)" }}>
-              <span>Subtotal</span>
-              <span className="amount">{submitting ? "..." : formatBaht(subtotal)}</span>
+              <span>Total Price</span>
+              <span className="amount">{submitting ? "..." : formatBaht(totalPrice)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+              <span>Total Discount</span>
+              <span className="amount">{submitting ? "..." : formatBaht(totalDiscount)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+              <span>Net Price</span>
+              <span className="amount">{submitting ? "..." : formatBaht(netPrice)}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem", color: "var(--text-muted)" }}>
               <span>VAT ({(vatRate * 100).toFixed(0)}%)</span>
-              <span className="amount">{submitting ? "..." : formatBaht(vat)}</span>
+              <span className="amount">{submitting ? "..." : formatBaht(vatAmount)}</span>
             </div>
             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 2, display: "flex", justifyContent: "space-between", fontSize: "1.1rem", fontWeight: 700, color: "var(--primary)" }}>
-              <span>Total</span>
+              <span>Amount</span>
               <span>{submitting ? "..." : formatBaht(amountDue)}</span>
             </div>
           </div>

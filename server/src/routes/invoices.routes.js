@@ -4,6 +4,7 @@ import { Router } from "express";
 import * as c from "../controllers/invoices.controller.js";
 
 const r = Router();
+r.get("/config/vat", c.getVatRate);
 r.get("/", c.listInvoices);
 r.get("/:invoiceNo", c.getInvoice);
 r.post("/", c.createInvoice);

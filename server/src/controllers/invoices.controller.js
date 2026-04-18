@@ -4,6 +4,16 @@ import * as invoicesService from "../services/invoices.service.js";
 import { sendList, sendOne, sendCreated, sendOk, sendError } from "../utils/response.js";
 import logger from "../utils/logger.js";
 
+export async function getVatRate(req, res) {
+  try {
+    const rate = await invoicesService.getVatRate();
+    sendOk(res, { vat_rate: rate });
+  } catch (err) {
+    logger.error("getVatRate failed", { error: err?.message ?? String(err) });
+    sendError(res, err?.message ?? String(err), 500);
+  }
+}
+
 export async function listInvoices(req, res) {
   try {
     const result = await invoicesService.listInvoices(req.query);

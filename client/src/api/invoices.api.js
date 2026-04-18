@@ -6,6 +6,11 @@ function unwrap(res) {
   return res;
 }
 
+export async function getVatRate() {
+  const res = unwrap(await http("/api/invoices/config/vat"));
+  return res.data.vat_rate;
+}
+
 export async function listInvoices(params = {}) {
   const query = new URLSearchParams(params).toString();
   const res = unwrap(await http(`/api/invoices${query ? `?${query}` : ""}`));

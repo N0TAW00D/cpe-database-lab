@@ -60,6 +60,8 @@ export default function LineItemRow({
   onProductCodeBlur,
   formatBaht,
   computeExtended,
+  computeDiscountAmount,
+  computeNetPrice,
 }) {
   const i = index;
   const it = item;
@@ -191,8 +193,30 @@ export default function LineItemRow({
         </div>
       </td>
       <td>
-        <div style={{ textAlign: "right", fontWeight: 600, color: "var(--primary)", fontSize: "0.95rem" }}>
+        <div style={{ textAlign: "right", padding: "8px 12px", background: "var(--bg-body)", borderRadius: "var(--radius-sm)", color: "var(--text-muted)", fontSize: "0.9rem" }}>
           {formatBaht(computeExtended(it))}
+        </div>
+      </td>
+      <td>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          max="100"
+          value={it.line_discount_percent || 0}
+          onChange={(e) => update(i, { line_discount_percent: e.target.value })}
+          className="form-control"
+          style={{ textAlign: "right", padding: "8px 12px", fontSize: "0.9rem" }}
+        />
+      </td>
+      <td>
+        <div style={{ textAlign: "right", padding: "8px 12px", background: "var(--bg-body)", borderRadius: "var(--radius-sm)", color: "var(--text-muted)", fontSize: "0.9rem" }}>
+          {formatBaht(computeDiscountAmount(it))}
+        </div>
+      </td>
+      <td>
+        <div style={{ textAlign: "right", fontWeight: 600, color: "var(--primary)", fontSize: "0.95rem" }}>
+          {formatBaht(computeNetPrice(it))}
         </div>
       </td>
       <td>
