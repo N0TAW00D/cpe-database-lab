@@ -304,3 +304,69 @@ export async function getSalesByProductMonthlySummary({
   };
 }
 
+export async function getInvoiceReceiptsReport({
+  date_from,
+  date_to,
+  customer_code,
+  page = 1,
+  limit = 25,
+} = {}) {
+  const offset = (Number(page) - 1) * Number(limit);
+  let whereClause = "WHERE 1=1";
+  const params = [];
+  let paramIndex = 1;
+
+  if (customer_code) {
+    whereClause += ` AND c.code = $${paramIndex++}`;
+    params.push(String(customer_code).trim());
+  }
+  if (date_from) {
+    whereClause += ` AND i.invoice_date >= $${paramIndex++}`;
+    params.push(date_from);
+  }
+  if (date_to) {
+    whereClause += ` AND i.invoice_date <= $${paramIndex++}`;
+    params.push(date_to);
+  }
+
+  const countQuery = `
+    SELECT COUNT(*) as total
+    FROM invoice i
+    JOIN customer c ON c.id = i.customer_id
+    LEFT JOIN receipt_line_item rli ON rli.invoice_id = i.id
+    LEFT JOIN receipt r ON r.id = rli.receipt_id
+    ${whereClause}
+  `;
+  const countResult = await pool.query(countQuery, params);
+  const total = Number(countResult.rows[0].total);
+
+  const dataQuery = `
+    SELECT
+      i.invoice_no, i.invoice_date, c.code AS customer_code, c.name AS customer_name,
+      i.amount_due AS invoice_amount_due,
+      COALESCE(p.paid_amount, 0) AS invoice_amount_received,
+      round((i.amount_due - COALESCE(p.paid_amount, 0))::numeric, 2) AS invoice_amount_still_remaining,
+      r.receipt_no, r.receipt_date, rli.receipt_amount AS received_amount_for_this_invoice
+    FROM invoice i
+    JOIN customer c ON c.id = i.customer_id
+    LEFT JOIN (
+      SELECT invoice_id, SUM(receipt_amount) AS paid_amount
+      FROM receipt_line_item
+      GROUP BY invoice_id
+    ) p ON p.invoice_id = i.id
+    LEFT JOIN receipt_line_item rli ON rli.invoice_id = i.id
+    LEFT JOIN receipt r ON r.id = rli.receipt_id
+    ${whereClause}
+    ORDER BY i.invoice_date DESC, i.invoice_no DESC, r.receipt_date ASC
+    LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+  `;
+  const { rows } = await pool.query(dataQuery, [...params, Number(limit), offset]);
+
+  return {
+    data: rows,
+    total,
+    page: Number(page),
+    limit: Number(limit),
+    totalPages: Math.ceil(total / Number(limit)),
+  };
+}

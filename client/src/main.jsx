@@ -104,7 +104,10 @@ function Sidebar() {
             Customer Buying
           </NavLink>
           <NavLink to="/reports/receipt-list" className={getSubLinkClass}>
-            Receipts
+            List of Receipts
+          </NavLink>
+          <NavLink to="/reports/invoice-receipts" className={getSubLinkClass}>
+            Invoice & Receipts
           </NavLink>
         </SubMenu>
       </nav>
@@ -221,6 +224,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/reports/monthly-sales" element={<Layout><Reports type="monthly-sales" /></Layout>} />
         <Route path="/reports/customer-sales" element={<Layout><Reports type="customer-sales" /></Layout>} />
         <Route path="/reports/receipt-list" element={<Layout><Reports type="receipt-list" /></Layout>} />
+        <Route path="/reports/invoice-receipts" element={<Layout><Reports type="invoice-receipts" /></Layout>} />
 
         <Route path="/sales-person" element={<Layout><SalesPersonList /></Layout>} />
         <Route path="/sales-person/new" element={<Layout><SalesPersonPage mode="create" /></Layout>} />

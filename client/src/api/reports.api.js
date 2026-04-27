@@ -12,12 +12,13 @@ const REPORT_ENDPOINTS = {
   "monthly-sales": "/api/reports/product-monthly-sales",
   "customer-sales": "/api/reports/customer-sales",
   "receipt-list": "/api/receipts/report/list",
+  "invoice-receipts": "/api/reports/invoice-receipts",
 };
 
 /**
  * Fetch report data from the backend. Used by the Reports page only; all report API calls go through this layer.
- * @param {string} type - One of "product-sales", "monthly-sales", "customer-sales"
- * @param {Object} params - Query params: product_id, customer_id, date_from, date_to, year, month, page, limit, sortBy, sortDir
+ * @param {string} type - One of "product-sales", "monthly-sales", "customer-sales", "receipt-list", "invoice-receipts"
+ * @param {Object} params - Query params: product_code, customer_code, date_from, date_to, year, month, page, limit, sortBy, sortDir
  * @returns {Promise<{ data: Array, meta?: { total, page, limit, totalPages } }>}
  */
 export async function getReportData(type, params = {}) {

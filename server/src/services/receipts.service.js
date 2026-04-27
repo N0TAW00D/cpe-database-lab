@@ -76,10 +76,10 @@ export async function listUnpaidInvoices({ customer_code, receipt_no } = {}) {
     params.push(String(customer_code).trim());
     customerFilter = `AND c.code = $${params.length}`;
   }
-  let currentReceiptFilter = "";
+  let currentReceiptExpr = "NULL";
   if (receipt_no) {
     params.push(String(receipt_no).trim());
-    currentReceiptFilter = `OR cr.receipt_no = $${params.length}`;
+    currentReceiptExpr = `(SELECT id FROM receipt WHERE receipt_no = $${params.length})`;
   }
 
   const { rows } = await pool.query(
@@ -87,17 +87,17 @@ export async function listUnpaidInvoices({ customer_code, receipt_no } = {}) {
       WITH paid AS (
         SELECT invoice_id, SUM(receipt_amount) AS paid_amount
         FROM receipt_line_item
+        WHERE receipt_id <> COALESCE(${currentReceiptExpr}, -1)
         GROUP BY invoice_id
       )
       SELECT i.invoice_no, i.invoice_date, i.amount_due,
+             COALESCE(p.paid_amount, 0) AS amount_already_received,
              round((i.amount_due - COALESCE(p.paid_amount, 0))::numeric, 2) AS amount_still_remaining,
              c.code AS customer_code, c.name AS customer_name
       FROM invoice i
       JOIN customer c ON c.id = i.customer_id
       LEFT JOIN paid p ON p.invoice_id = i.id
-      LEFT JOIN receipt_line_item crli ON crli.invoice_id = i.id
-      LEFT JOIN receipt cr ON cr.id = crli.receipt_id
-      WHERE (i.amount_due - COALESCE(p.paid_amount, 0) > 0 ${currentReceiptFilter})
+      WHERE i.amount_due - COALESCE(p.paid_amount, 0) > 0
         ${customerFilter}
       GROUP BY i.id, c.code, c.name, p.paid_amount
       ORDER BY i.invoice_date, i.invoice_no
@@ -119,6 +119,7 @@ export async function getReceipt(idOrReceiptNo) {
   const header = await pool.query(
     `
       SELECT r.receipt_no, r.receipt_date, r.total_invoice_amount_due,
+             r.payment_method, r.payment_notes,
              r.total_amount_received, r.total_amount_still_remaining,
              c.code AS customer_code, c.name AS customer_name,
              c.address_line1, c.address_line2, co.name AS country_name
@@ -194,7 +195,7 @@ async function enrichLineItems(client, customer_id, line_items, receiptIdToIgnor
   return enriched;
 }
 
-export async function createReceipt({ receipt_no, receipt_date, customer_code, line_items }) {
+export async function createReceipt({ receipt_no, receipt_date, customer_code, payment_method, payment_notes, line_items }) {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -208,11 +209,11 @@ export async function createReceipt({ receipt_no, receipt_date, customer_code, l
 
     const rec = await client.query(
       `
-        INSERT INTO receipt (receipt_no, receipt_date, customer_id, total_invoice_amount_due, total_amount_received, total_amount_still_remaining)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO receipt (receipt_no, receipt_date, customer_id, payment_method, payment_notes, total_invoice_amount_due, total_amount_received, total_amount_still_remaining)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING id, receipt_no
       `,
-      [resolvedReceiptNo, receipt_date, customer_id, total_invoice_amount_due, total_amount_received, total_amount_still_remaining],
+      [resolvedReceiptNo, receipt_date, customer_id, payment_method || null, payment_notes || null, total_invoice_amount_due, total_amount_received, total_amount_still_remaining],
     );
 
     for (const li of enriched) {
@@ -235,7 +236,7 @@ export async function createReceipt({ receipt_no, receipt_date, customer_code, l
   }
 }
 
-export async function updateReceipt(idOrReceiptNo, { receipt_no, receipt_date, customer_code, line_items }) {
+export async function updateReceipt(idOrReceiptNo, { receipt_no, receipt_date, customer_code, payment_method, payment_notes, line_items }) {
   let id = idOrReceiptNo;
   if (typeof idOrReceiptNo === "string" && String(idOrReceiptNo).trim() !== "" && isNaN(Number(idOrReceiptNo))) {
     id = await resolveReceiptId(String(idOrReceiptNo).trim());
@@ -263,10 +264,11 @@ export async function updateReceipt(idOrReceiptNo, { receipt_no, receipt_date, c
       `
         UPDATE receipt
         SET receipt_no = $1, receipt_date = $2, customer_id = $3,
-            total_invoice_amount_due = $4, total_amount_received = $5, total_amount_still_remaining = $6
-        WHERE id = $7
+            payment_method = $4, payment_notes = $5,
+            total_invoice_amount_due = $6, total_amount_received = $7, total_amount_still_remaining = $8
+        WHERE id = $9
       `,
-      [resolvedReceiptNo, receipt_date, customer_id, total_invoice_amount_due, total_amount_received, total_amount_still_remaining, id],
+      [resolvedReceiptNo, receipt_date, customer_id, payment_method || null, payment_notes || null, total_invoice_amount_due, total_amount_received, total_amount_still_remaining, id],
     );
     await client.query("DELETE FROM receipt_line_item WHERE receipt_id = $1", [id]);
     for (const li of enriched) {
@@ -337,7 +339,7 @@ export async function receiptReport({
   const { rows } = await pool.query(
     `
       SELECT r.receipt_no, r.receipt_date, c.code AS customer_code, c.name AS customer_name,
-             r.total_invoice_amount_due, r.total_amount_received, r.total_amount_still_remaining
+             r.payment_method, r.payment_notes, r.total_amount_received
       FROM receipt r
       JOIN customer c ON c.id = r.customer_id
       ${whereSql}

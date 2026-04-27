@@ -29,6 +29,8 @@ export default function ReceiptPage({ mode: propMode }) {
           receipt_no: h.receipt_no,
           receipt_date: h.receipt_date,
           customer_code: h.customer_code,
+          payment_method: h.payment_method,
+          payment_notes: h.payment_notes,
           line_items: data.line_items.map((li) => ({
             id: li.id,
             invoice_no: li.invoice_no,
@@ -98,6 +100,8 @@ export default function ReceiptPage({ mode: propMode }) {
               <h2 className="mb-4">RECEIPT</h2>
               <div><span className="font-bold">Date:</span> {formatDate(h.receipt_date)}</div>
               <div><span className="font-bold">Receipt No:</span> {h.receipt_no}</div>
+              <div><span className="font-bold">Payment Method:</span> <span style={{textTransform: "capitalize"}}>{h.payment_method || "Cash"}</span></div>
+              {h.payment_notes && <div><span className="font-bold">Notes:</span> {h.payment_notes}</div>}
             </div>
           </div>
 
@@ -107,9 +111,9 @@ export default function ReceiptPage({ mode: propMode }) {
                 <tr>
                   <th>Invoice No</th>
                   <th>Date</th>
-                  <th className="text-right">Invoice Amount Due</th>
-                  <th className="text-right">Amount Received</th>
-                  <th className="text-right">Still Remaining</th>
+                  <th className="text-right">Amount Remaining</th>
+                  <th className="text-right">Amount Received Here</th>
+                  <th className="text-right">Amount Still Remaining</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,11 +136,11 @@ export default function ReceiptPage({ mode: propMode }) {
             </div>
             <div style={{ minWidth: 300 }}>
               <div className="flex justify-between mb-1">
-                <span>Total Invoice Amount Due:</span>
+                <span>Total Amount Remaining (Sum):</span>
                 <span>{formatBaht(h.total_invoice_amount_due)}</span>
               </div>
               <div className="flex justify-between mb-1 font-bold">
-                <span>Total Amount Received:</span>
+                <span>Total Amount Received Here:</span>
                 <span>{formatBaht(h.total_amount_received)}</span>
               </div>
               <div className="flex justify-between mt-4 p-2 bg-body font-bold" style={{ color: "var(--primary)" }}>

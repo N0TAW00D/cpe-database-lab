@@ -38,3 +38,12 @@ export async function getSalesByProductMonthlySummary(req, res) {
     sendError(res, err?.message ?? String(err), 500);
   }
 }
+
+export async function getInvoiceReceiptsReport(req, res) {
+  try {
+    const result = await reportsService.getInvoiceReceiptsReport(req.query);
+    sendList(res, result);
+  } catch (err) {
+    sendError(res, err?.message ?? String(err), 500);
+  }
+}

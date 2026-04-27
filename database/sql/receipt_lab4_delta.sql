@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS receipt (
   receipt_no text UNIQUE NOT NULL,
   receipt_date date NOT NULL,
   customer_id bigint NOT NULL REFERENCES customer(id) ON DELETE restrict ON UPDATE cascade,
+  payment_method text CHECK (payment_method IN ('cash', 'bank transfer', 'check')),
+  payment_notes text,
   total_invoice_amount_due numeric(12,2) DEFAULT 0,
   total_amount_received numeric(12,2) DEFAULT 0,
   total_amount_still_remaining numeric(12,2) DEFAULT 0
@@ -30,3 +32,15 @@ CREATE INDEX IF NOT EXISTS idx_receipt_customer ON receipt(customer_id);
 CREATE INDEX IF NOT EXISTS idx_receipt_line_receipt ON receipt_line_item(receipt_id);
 CREATE INDEX IF NOT EXISTS idx_receipt_line_invoice ON receipt_line_item(invoice_id);
 
+
+CREATE OR REPLACE VIEW invoice_received_view AS
+SELECT
+  i.customer_id,
+  i.id AS invoice_id,
+  i.invoice_no,
+  i.amount_due,
+  COALESCE(SUM(rli.receipt_amount), 0) AS amount_received,
+  (i.amount_due - COALESCE(SUM(rli.receipt_amount), 0)) AS amount_remain
+FROM invoice i
+LEFT JOIN receipt_line_item rli ON rli.invoice_id = i.id
+GROUP BY i.id, i.customer_id, i.invoice_no, i.amount_due;
