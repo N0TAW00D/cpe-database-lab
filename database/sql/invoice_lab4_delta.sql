@@ -1,3 +1,4 @@
+
 \set ON_ERROR_STOP on
 
 -- Individual Lab 04: Receipt module.
