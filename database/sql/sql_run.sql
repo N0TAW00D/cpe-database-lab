@@ -7,4 +7,6 @@
 -- Database: PostgreSQL (Docker)
 
 \ir 001_schema.sql
+\ir invoice_lab3_delta.sql
+\ir receipt_lab4_delta.sql
 \ir 003_seed.sql
