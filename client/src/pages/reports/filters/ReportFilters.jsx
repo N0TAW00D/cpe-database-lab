@@ -53,6 +53,18 @@ export default function ReportFilters({ type, filters, onChange, onApply, onRese
             />
           </>
         )}
+
+        {/* Receipt Report Filters */}
+        {type === "receipt-list" && (
+          <>
+            <CustomerFilter value={filters.customerCode || ""} displayLabel={filters.customerLabel} onChange={handleChange} />
+            <DateRangeFilter
+              dateFrom={filters.dateFrom || ""}
+              dateTo={filters.dateTo || ""}
+              onChange={handleChange}
+            />
+          </>
+        )}
       </div>
 
       <div className="filters-actions">

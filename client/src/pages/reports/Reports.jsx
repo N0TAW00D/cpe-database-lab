@@ -85,6 +85,37 @@ const REPORT_CONFIG = {
         { key: "value_sold", label: "Net Value", align: "right", sortable: true, style: { fontWeight: 600 }, render: (v) => formatBaht(v) }
       ];
     }
+  },
+  "receipt-list": {
+    title: "List of Receipts",
+    subtitle: "Payments received by customer and date",
+    emptyMessage: "No receipt records found.",
+    getColumns: (filters) => {
+      const hasDateFilter = filters?.dateFrom || filters?.dateTo;
+      return [
+        { key: "receipt_no", label: "Receipt No", sortable: true, render: (v) => <span className="font-bold">{v}</span> },
+        { key: "receipt_date", label: "Receipt Date", sortable: true, render: (v) => formatDate(v) },
+        { key: "customer_code", label: "Customer", sortable: true, render: (_, row) => `${row.customer_name} (${row.customer_code})` },
+        ...(hasDateFilter ? [
+          {
+            key: "date_range",
+            label: "Date Range",
+            sortable: false,
+            render: (_, row, filterState) => {
+              const dateFrom = filterState?.dateFrom || filters?.dateFrom;
+              const dateTo = filterState?.dateTo || filters?.dateTo;
+              if (dateFrom && dateTo) return `${formatDate(dateFrom)} - ${formatDate(dateTo)}`;
+              if (dateFrom) return `From ${formatDate(dateFrom)}`;
+              if (dateTo) return `Until ${formatDate(dateTo)}`;
+              return "-";
+            }
+          }
+        ] : []),
+        { key: "total_invoice_amount_due", label: "Invoice Due", align: "right", sortable: false, render: (v) => formatBaht(v) },
+        { key: "total_amount_received", label: "Received", align: "right", sortable: false, style: { fontWeight: 600, color: "var(--primary)" }, render: (v) => formatBaht(v) },
+        { key: "total_amount_still_remaining", label: "Still Remaining", align: "right", sortable: false, render: (v) => formatBaht(v) }
+      ];
+    }
   }
 };
 
