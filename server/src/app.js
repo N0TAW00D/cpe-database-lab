@@ -7,6 +7,7 @@ import fs from "fs";
 
 import logger from "./utils/logger.js";
 import invoicesRoutes from "./routes/invoices.routes.js";
+import receiptsRoutes from "./routes/receipts.routes.js";
 import reportsRoutes from "./routes/reports.routes.js";
 import customersRoutes from "./routes/customers.routes.js";
 import productsRoutes from "./routes/products.routes.js";
@@ -107,6 +108,7 @@ app.get("/api/updates-check", async (_, res) => {
 app.use("/api/customers", customersRoutes);
 app.use("/api/products", productsRoutes);
 app.use("/api/invoices", invoicesRoutes);
+app.use("/api/receipts", receiptsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/sales-persons", salesPersonsRoutes);
 
