@@ -6,6 +6,8 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import InvoiceList from "./pages/invoices/InvoiceList.jsx";
 import InvoicePage from "./pages/invoices/InvoicePage.jsx";
+import ReceiptList from "./pages/receipts/ReceiptList.jsx";
+import ReceiptPage from "./pages/receipts/ReceiptPage.jsx";
 import CustomerList from "./pages/customers/CustomerList.jsx";
 import CustomerPage from "./pages/customers/CustomerPage.jsx";
 import ProductList from "./pages/products/ProductList.jsx";
@@ -70,6 +72,10 @@ function Sidebar() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
           Invoices
         </NavLink>
+        <NavLink to="/receipts" className={getLinkClass}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path><path d="M8 10h8"></path><path d="M8 14h8"></path><path d="M8 6h8"></path></svg>
+          Receipts
+        </NavLink>
         <NavLink to="/sales-person" className={getLinkClass}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
           Sales Person
@@ -96,6 +102,9 @@ function Sidebar() {
           </NavLink>
           <NavLink to="/reports/customer-sales" className={getSubLinkClass}>
             Customer Buying
+          </NavLink>
+          <NavLink to="/reports/receipt-list" className={getSubLinkClass}>
+            Receipts
           </NavLink>
         </SubMenu>
       </nav>
@@ -195,6 +204,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/invoices/new" element={<Layout><InvoicePage mode="create" /></Layout>} />
         <Route path="/invoices/:id" element={<Layout><InvoicePage mode="view" /></Layout>} />
         <Route path="/invoices/:id/edit" element={<Layout><InvoicePage mode="edit" /></Layout>} />
+        <Route path="/receipts" element={<Layout><ReceiptList /></Layout>} />
+        <Route path="/receipts/new" element={<Layout><ReceiptPage mode="create" /></Layout>} />
+        <Route path="/receipts/:id" element={<Layout><ReceiptPage mode="view" /></Layout>} />
+        <Route path="/receipts/:id/edit" element={<Layout><ReceiptPage mode="edit" /></Layout>} />
         <Route path="/customers" element={<Layout><CustomerList /></Layout>} />
         <Route path="/customers/new" element={<Layout><CustomerPage mode="create" /></Layout>} />
         <Route path="/customers/:id" element={<Layout><CustomerPage mode="view" /></Layout>} />
@@ -207,6 +220,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/reports/product-sales" element={<Layout><Reports type="product-sales" /></Layout>} />
         <Route path="/reports/monthly-sales" element={<Layout><Reports type="monthly-sales" /></Layout>} />
         <Route path="/reports/customer-sales" element={<Layout><Reports type="customer-sales" /></Layout>} />
+        <Route path="/reports/receipt-list" element={<Layout><Reports type="receipt-list" /></Layout>} />
 
         <Route path="/sales-person" element={<Layout><SalesPersonList /></Layout>} />
         <Route path="/sales-person/new" element={<Layout><SalesPersonPage mode="create" /></Layout>} />
